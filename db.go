@@ -48,3 +48,28 @@ func (db *DB) Begin() (*Tx, error) {
 type Tx struct {
 	*sql.Tx
 }
+
+// withTx creates a new wrapped transaction, invokes an input closure, and
+// commits or rolls back the transaction, depending on the result of the
+// closure invocation.
+func (db *DB) withTx(fn func(tx *Tx) error) error {
+	// Start a wrapped transaction
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Invoke input closure, passing in wrapped transaction
+	if err := fn(tx); err != nil {
+		// Failure, attempt to roll back transaction
+		if rErr := tx.Rollback(); err != nil {
+			return rErr
+		}
+
+		// Return error from closure
+		return err
+	}
+
+	// Attempt to commit transaction
+	return tx.Commit()
+}

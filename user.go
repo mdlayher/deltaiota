@@ -18,19 +18,9 @@ type User struct {
 // SaveUser starts a transaction, inserts a new User, and attempts to commit
 // the transaction.
 func (db *DB) SaveUser(u *User) error {
-	// Start a wrapped transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	// Save User in wrapped transaction
-	if err := tx.SaveUser(u); err != nil {
-		return err
-	}
-
-	// Attempt to commit transaction
-	return tx.Commit()
+	return db.withTx(func(tx *Tx) error {
+		return tx.SaveUser(u)
+	})
 }
 
 // SaveUser inserts a new User in the context of the current transaction.
