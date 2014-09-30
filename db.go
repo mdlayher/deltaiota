@@ -28,3 +28,23 @@ func (db *DB) Open(driver string, dsn string) error {
 func (db *DB) Close() error {
 	return db.DB.Close()
 }
+
+// Begin starts a transaction on this database instance.
+func (db *DB) Begin() (*Tx, error) {
+	// Start a transaction on underlying database
+	dbtx, err := db.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	// Return wrapped transaction
+	return &Tx{
+		Tx: dbtx,
+	}, nil
+}
+
+// Tx is a wrapped database transaction, which provides additional methods
+// for interacting directly with custom types.
+type Tx struct {
+	*sql.Tx
+}
