@@ -4,18 +4,29 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"path"
 	"time"
 
 	"github.com/mdlayher/deltaiota"
+	"github.com/mdlayher/deltaiota/bindata"
+
 	"github.com/stretchr/graceful"
 )
 
 const (
+	// sqlite3 is the name of the sqlite3 driver for the database
+	sqlite3 = "sqlite3"
+
+	// sqlite3DBAsset is the name of the bindata asset which stores the sqlite database
+	sqlite3DBAsset = "res/sqlite/deltaiota.db"
+
 	// driver is the database/sql driver used for the database instance
-	driver = "sqlite3"
+	driver = sqlite3
 )
 
 var (
@@ -32,7 +43,7 @@ var (
 
 func init() {
 	// Set up flags
-	flag.StringVar(&db, "db", "", "DSN for database instance")
+	flag.StringVar(&db, "db", "deltaiota.db", "DSN for database instance")
 	flag.StringVar(&host, "host", ":8080", "HTTP server host")
 	flag.DurationVar(&timeout, "timeout", 10*time.Second, "HTTP graceful timeout duration")
 }
@@ -40,6 +51,13 @@ func init() {
 func main() {
 	// Parse all flags
 	flag.Parse()
+
+	// If database is sqlite3, perform initial setup
+	if driver == sqlite3 {
+		if err := sqlite3Setup(db); err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	// Open database connection
 	didb := &deltaiota.DB{}
@@ -65,4 +83,31 @@ func main() {
 	}
 
 	log.Println("deltaiota: graceful shutdown complete")
+}
+
+// sqlite3Setup performs setup routines specific to a sqlite3 database
+func sqlite3Setup(dsn string) error {
+	// Check if database already exists at specified location
+	dbPath := path.Clean(dsn)
+	_, err := os.Stat(dbPath)
+	if err == nil {
+		// Database exists, skip setup
+		log.Println("deltaiota: using sqlite3 database:", dbPath)
+		return nil
+	}
+
+	// Any other errors, return now
+	if !os.IsNotExist(err) {
+		return err
+	}
+
+	// Retrieve sqlite database asset
+	asset, err := bindata.Asset(sqlite3DBAsset)
+	if err != nil {
+		return err
+	}
+
+	// Write asset directly to new file
+	log.Println("deltaiota: creating sqlite3 database:", dbPath)
+	return ioutil.WriteFile(dbPath, asset, 0664)
 }
