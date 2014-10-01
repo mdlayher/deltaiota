@@ -120,13 +120,10 @@ func (db *DB) withPreparedRows(query string, fn func(rows *Rows) error, args ...
 		return err
 	}
 
-	// Wrap rows in helper type
-	diRows := &Rows{
+	// Invoke input closure with wrapped Rows type, capturing return value for later
+	fnErr := fn(&Rows{
 		Rows: rows,
-	}
-
-	// Invoke input closure, capturing return value for later
-	fnErr := fn(diRows)
+	})
 
 	// Close rows
 	if err := rows.Close(); err != nil {
