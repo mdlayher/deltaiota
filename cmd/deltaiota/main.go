@@ -46,7 +46,7 @@ func init() {
 	// Set up flags
 	flag.StringVar(&db, "db", "deltaiota.db", "DSN for database instance")
 	flag.StringVar(&host, "host", ":1898", "HTTP server host")
-	flag.DurationVar(&timeout, "timeout", 10*time.Second, "HTTP graceful timeout duration")
+	flag.DurationVar(&timeout, "timeout", 5*time.Second, "HTTP graceful timeout duration")
 }
 
 func main() {
@@ -77,6 +77,8 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	log.Println("deltaiota: shutting down")
 
 	// Close database connection
 	if err := didb.Close(); err != nil {
