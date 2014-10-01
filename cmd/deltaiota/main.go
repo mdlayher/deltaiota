@@ -12,8 +12,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/mdlayher/deltaiota"
+	"github.com/mdlayher/deltaiota/api"
 	"github.com/mdlayher/deltaiota/bindata"
+	"github.com/mdlayher/deltaiota/data"
 
 	"github.com/stretchr/graceful"
 )
@@ -60,7 +61,7 @@ func main() {
 	}
 
 	// Open database connection
-	didb := &deltaiota.DB{}
+	didb := &data.DB{}
 	if err := didb.Open(driver, db); err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +70,7 @@ func main() {
 	log.Println("deltaiota: listening:", host)
 	if err := graceful.ListenAndServe(&http.Server{
 		Addr:    host,
-		Handler: deltaiota.NewServeMux(didb),
+		Handler: api.NewServeMux(didb),
 	}, timeout); err != nil {
 		// Ignore error on failed "accept" when closing
 		if nErr, ok := err.(*net.OpError); !ok || nErr.Op != "accept" {

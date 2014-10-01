@@ -1,4 +1,6 @@
-package deltaiota
+// Package data provides the database abstraction layer and backing
+// models for the Phi Mu Alpha Sinfonia - Delta Iota chapter website.
+package data
 
 import (
 	"database/sql"

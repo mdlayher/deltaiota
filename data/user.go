@@ -1,4 +1,4 @@
-package deltaiota
+package data
 
 const (
 	// sqlInsertUser is the SQL statement used to insert a new User
