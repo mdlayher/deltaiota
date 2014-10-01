@@ -64,7 +64,7 @@ func (db *DB) withTx(fn func(tx *Tx) error) error {
 	// Invoke input closure, passing in wrapped transaction
 	if err := fn(tx); err != nil {
 		// Failure, attempt to roll back transaction
-		if rErr := tx.Rollback(); err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
 			return rErr
 		}
 
