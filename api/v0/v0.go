@@ -5,6 +5,7 @@ package v0
 import (
 	"net/http"
 
+	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data"
 
 	"github.com/gorilla/mux"
@@ -21,23 +22,20 @@ func NewServeMux(db *data.DB) http.Handler {
 	// Create new mux to be configured
 	r := mux.NewRouter().StrictSlash(true).PathPrefix(APIPrefix).Subrouter()
 
-	// Create a handler which stores the database connection
-	h := &Handler{
+	// Create a context which stores any shared members
+	c := &context{
 		db: db,
 	}
 
 	// Set up HTTP routes
-	r.HandleFunc("/", h.Root).Methods("GET")
+
+	// Users API
+	r.Handle("/users", util.JSONAPIHandler(c.ListUsers)).Methods("GET")
 
 	return r
 }
 
-// Handler stores shared members for HTTP handlers.
-type Handler struct {
+// context stores shared members for API v0 HTTP handlers.
+type context struct {
 	db *data.DB
-}
-
-// Root handles the root HTTP route.
-func (h *Handler) Root(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hello world"))
 }
