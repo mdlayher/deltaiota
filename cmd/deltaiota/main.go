@@ -45,7 +45,7 @@ var (
 func init() {
 	// Set up flags
 	flag.StringVar(&db, "db", "deltaiota.db", "DSN for database instance")
-	flag.StringVar(&host, "host", ":8080", "HTTP server host")
+	flag.StringVar(&host, "host", ":1898", "HTTP server host")
 	flag.DurationVar(&timeout, "timeout", 10*time.Second, "HTTP graceful timeout duration")
 }
 
