@@ -1,3 +1,5 @@
+// Package util provides common API helper types and functions for the Phi Mu
+// Alpha Sinfonia - Delta Iota chapter website.
 package util
 
 import (
