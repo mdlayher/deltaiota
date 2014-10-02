@@ -4,6 +4,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -30,6 +31,9 @@ const (
 	driver = sqlite3
 )
 
+// version is the current git hash, injected by the Go linker
+var version string
+
 var (
 	// db is the DSN used for the database instance
 	db string
@@ -52,6 +56,9 @@ func init() {
 func main() {
 	// Parse all flags
 	flag.Parse()
+
+	// Report information on startup
+	log.Println(fmt.Sprintf("deltaiota: starting [pid: %d] [version: %s]", os.Getpid(), version))
 
 	// If database is sqlite3, perform initial setup
 	if driver == sqlite3 {
