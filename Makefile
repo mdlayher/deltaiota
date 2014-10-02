@@ -1,8 +1,11 @@
-.PHONY: bindata fmt test
+.PHONY: bindata fmt race test
+
+# Flags passed to Go linker, used to inject commit hash
+LDFLAGS=-ldflags "-X main.version `git rev-parse HEAD`"
 
 # Build the binary for the current platform
 make:
-	go build -o bin/deltaiota ./cmd/deltaiota/
+	go build ${LDFLAGS} -o bin/deltaiota ./cmd/deltaiota/
 
 # Build binary assets
 bindata:
@@ -13,6 +16,10 @@ fmt:
 	go fmt ./...
 	go vet ./...
 	golint .
+
+# Build the binary with the race detector enabled
+race:
+	go build -race ${LDFLAGS} -o bin/deltaiota ./cmd/deltaiota/
 
 # Run all tests
 test:
