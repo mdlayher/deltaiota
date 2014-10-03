@@ -1,10 +1,10 @@
+// Package data provides the database abstraction layer and helpers
+// for the Phi Mu Alpha Sinfonia - Delta Iota chapter website.
 package data
 
 import (
 	"database/sql"
 	"errors"
-
-	"github.com/mdlayher/deltaiota/data/models"
 
 	// sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
@@ -50,59 +50,6 @@ func (db *DB) Begin() (*Tx, error) {
 	return &Tx{
 		Tx: dbtx,
 	}, nil
-}
-
-// SaveUser starts a transaction, inserts a new User, and attempts to commit
-// the transaction.
-func (db *DB) SaveUser(u *models.User) error {
-	return db.withTx(func(tx *Tx) error {
-		return tx.SaveUser(u)
-	})
-}
-
-// FetchAllUsers returns a slice of all Users from the database.
-func (db *DB) FetchAllUsers() ([]models.User, error) {
-	return db.fetchUsers(sqlSelectAllUsers)
-}
-
-// SelectUserByID returns a single User by ID from the database.
-func (db *DB) SelectUserByID(id int64) (*models.User, error) {
-	// Fetch users with matching ID
-	users, err := db.fetchUsers(sqlSelectUserByID, id)
-	if err != nil {
-		return nil, err
-	}
-
-	// Verify only 0 or 1 user returned
-	if len(users) == 0 {
-		return nil, nil
-	} else if len(users) == 1 {
-		return &users[0], nil
-	}
-
-	// More than one result returned
-	return nil, ErrMultipleResults
-}
-
-// fetchUsers returns a slice of Users from the database, based upon an input
-// SQL query and arguments
-func (db *DB) fetchUsers(query string, args ...interface{}) ([]models.User, error) {
-	// Slice of users to return
-	var users []models.User
-
-	// Invoke closure with prepared statement and wrapped rows,
-	// passing any arguments from the caller
-	err := db.withPreparedRows(query, func(rows *Rows) error {
-		// Scan rows into a slice of Users
-		var err error
-		users, err = rows.ScanUsers()
-
-		// Return errors from scanning
-		return err
-	}, args...)
-
-	// Return any matching users and error
-	return users, err
 }
 
 // withTx creates a new wrapped transaction, invokes an input closure, and
@@ -168,4 +115,16 @@ func (db *DB) withPreparedRows(query string, fn func(rows *Rows) error, args ...
 
 	// Return result of closure
 	return fnErr
+}
+
+// Tx is a wrapped database transaction, which provides additional methods
+// for interacting directly with custom types.
+type Tx struct {
+	*sql.Tx
+}
+
+// Rows is a wrapped set of database rows, which provides additional methods
+// for interacting directly with custom types.
+type Rows struct {
+	*sql.Rows
 }

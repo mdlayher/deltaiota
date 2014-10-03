@@ -1,0 +1,118 @@
+package data
+
+import (
+	"github.com/mdlayher/deltaiota/data/models"
+)
+
+const (
+	// sqlSelectAllUsers is the SQL statement used to select all Users
+	sqlSelectAllUsers = `
+		SELECT * FROM users;
+	`
+	// sqlSelectUserByID is the SQL statement used to select a single user by ID
+	sqlSelectUserByID = `
+		SELECT * FROM users WHERE id = ?;
+	`
+
+	// sqlInsertUser is the SQL statement used to insert a new User
+	sqlInsertUser = `
+		INSERT INTO users (
+			"username"
+		) VALUES (?);
+	`
+)
+
+// SaveUser starts a transaction, inserts a new User, and attempts to commit
+// the transaction.
+func (db *DB) SaveUser(u *models.User) error {
+	return db.withTx(func(tx *Tx) error {
+		return tx.SaveUser(u)
+	})
+}
+
+// FetchAllUsers returns a slice of all Users from the database.
+func (db *DB) FetchAllUsers() ([]models.User, error) {
+	return db.fetchUsers(sqlSelectAllUsers)
+}
+
+// SelectUserByID returns a single User by ID from the database.
+func (db *DB) SelectUserByID(id int64) (*models.User, error) {
+	// Fetch users with matching ID
+	users, err := db.fetchUsers(sqlSelectUserByID, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify only 0 or 1 user returned
+	if len(users) == 0 {
+		return nil, nil
+	} else if len(users) == 1 {
+		return &users[0], nil
+	}
+
+	// More than one result returned
+	return nil, ErrMultipleResults
+}
+
+// fetchUsers returns a slice of Users from the database, based upon an input
+// SQL query and arguments
+func (db *DB) fetchUsers(query string, args ...interface{}) ([]models.User, error) {
+	// Slice of users to return
+	var users []models.User
+
+	// Invoke closure with prepared statement and wrapped rows,
+	// passing any arguments from the caller
+	err := db.withPreparedRows(query, func(rows *Rows) error {
+		// Scan rows into a slice of Users
+		var err error
+		users, err = rows.ScanUsers()
+
+		// Return errors from scanning
+		return err
+	}, args...)
+
+	// Return any matching users and error
+	return users, err
+}
+
+// SaveUser inserts a new User in the context of the current transaction.
+func (tx *Tx) SaveUser(u *models.User) error {
+	// Execute SQL to insert User
+	result, err := tx.Tx.Exec(sqlInsertUser)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve generated ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// Store generated ID
+	u.ID = id
+	return nil
+}
+
+// ScanUsers returns a slice of Users from wrapped rows.
+func (r *Rows) ScanUsers() ([]models.User, error) {
+	// Iterate all returned rows
+	var users []models.User
+	for r.Rows.Next() {
+		// Scan new user into struct, using specified fields
+		u := new(models.User)
+		if err := r.Rows.Scan(u.SQLFields()...); err != nil {
+			return nil, err
+		}
+
+		// Discard any nil results
+		if u == nil {
+			continue
+		}
+
+		// Dereference and append user to output slice
+		users = append(users, *u)
+	}
+
+	return users, nil
+}
