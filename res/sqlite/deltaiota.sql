@@ -4,13 +4,13 @@ BEGIN TRANSACTION;
 /* users */
 CREATE TABLE "users" (
 	"id"         INTEGER PRIMARY KEY AUTOINCREMENT,
-	"username"   TEXT,
-	"first_name" TEXT,
-	"last_name"  TEXT,
-	"email"      TEXT,
-	"phone"      TEXT,
-	"password"   TEXT,
-	"salt"       TEXT
+	"username"   TEXT NOT NULL,
+	"first_name" TEXT NOT NULL,
+	"last_name"  TEXT NOT NULL,
+	"email"      TEXT NOT NULL,
+	"phone"      TEXT NOT NULL,
+	"password"   TEXT NOT NULL,
+	"salt"       TEXT NOT NULL
 );
 CREATE UNIQUE INDEX "users_unique_username" ON "users" ("username");
 CREATE UNIQUE INDEX "users_unique_email" ON "users" ("email");

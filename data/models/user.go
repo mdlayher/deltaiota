@@ -2,15 +2,15 @@ package models
 
 // User represents a user of the application.
 type User struct {
-	ID        int64   `db:"id" json:"id"`
-	Username  *string `db:"username" json:"username"`
-	FirstName *string `db:"first_name" json:"firstName"`
-	LastName  *string `db:"last_name" json:"lastName"`
-	Email     *string `db:"email" json:"email"`
-	Phone     *string `db:"phone" json:"phone"`
+	ID        int64  `db:"id" json:"id"`
+	Username  string `db:"username" json:"username"`
+	FirstName string `db:"first_name" json:"firstName"`
+	LastName  string `db:"last_name" json:"lastName"`
+	Email     string `db:"email" json:"email"`
+	Phone     string `db:"phone" json:"phone"`
 
-	password *string `db:"password"`
-	salt     *string `db:"salt"`
+	password string `db:"password"`
+	salt     string `db:"salt"`
 }
 
 // SQLFields returns the correct field order to scan SQL row results into the
