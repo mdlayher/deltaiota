@@ -2,11 +2,18 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 
 	"github.com/mdlayher/deltaiota/data/models"
 
 	// sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
+)
+
+var (
+	// ErrMultipleResults is returned when a query should return only zero or a single
+	// result, but returns two or more results.
+	ErrMultipleResults = errors.New("db: multiple results returned")
 )
 
 // DB provides the database abstraction layer for the application.
@@ -56,6 +63,25 @@ func (db *DB) SaveUser(u *models.User) error {
 // FetchAllUsers returns a slice of all Users from the database.
 func (db *DB) FetchAllUsers() ([]models.User, error) {
 	return db.fetchUsers(sqlSelectAllUsers)
+}
+
+// SelectUserByID returns a single User by ID from the database.
+func (db *DB) SelectUserByID(id int64) (*models.User, error) {
+	// Fetch users with matching ID
+	users, err := db.fetchUsers(sqlSelectUserByID, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify only 0 or 1 user returned
+	if len(users) == 0 {
+		return nil, nil
+	} else if len(users) == 1 {
+		return &users[0], nil
+	}
+
+	// More than one result returned
+	return nil, ErrMultipleResults
 }
 
 // fetchUsers returns a slice of Users from the database, based upon an input

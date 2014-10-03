@@ -31,6 +31,7 @@ func NewServeMux(db *data.DB) http.Handler {
 
 	// Users API
 	r.Handle("/users", util.JSONAPIHandler(c.ListUsers)).Methods("GET")
+	r.Handle("/users/{id}", util.JSONAPIHandler(c.GetUser)).Methods("GET")
 
 	return r
 }
