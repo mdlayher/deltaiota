@@ -3,6 +3,7 @@ package v0
 import (
 	"database/sql"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -14,16 +15,24 @@ import (
 
 // JSON Users API, human-readable client error responses.
 const (
+	// HTTP GET
 	userInvalidID = "invalid user ID"
 	userMissingID = "missing user ID"
 	userNotFound  = "user not found"
+
+	// HTTP POST
+	userMissingParameters = "missing required parameters"
 )
 
 // JSON Users API, map of client errors to response codes.
 var usersCode = map[string]int{
+	// HTTP GET
 	userInvalidID: http.StatusBadRequest,
 	userMissingID: http.StatusBadRequest,
 	userNotFound:  http.StatusNotFound,
+
+	// HTTP POST
+	userMissingParameters: http.StatusBadRequest,
 }
 
 // Generated JSON responses for various client-facing errors.
@@ -96,4 +105,64 @@ func (c *context) GetUser(r *http.Request) (int, []byte, error) {
 		Users: []*models.User{user},
 	})
 	return http.StatusOK, body, err
+}
+
+// PostUser is a util.JSONAPIFunc which creates a User and returns HTTP 201
+// and a JSON user object on success, or a non-200 HTTP status code and an
+// error response on failure.
+func (c *context) PostUser(r *http.Request) (int, []byte, error) {
+	// Read entire request body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Unmarshal body into a User
+	user := new(models.User)
+	if err := json.Unmarshal(body, user); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Unmarshal JSON into raw message for further processing
+	var jsonMap map[string]*json.RawMessage
+	if err := json.Unmarshal(body, &jsonMap); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Ensure password key was passed
+	if _, ok := jsonMap["password"]; !ok {
+		return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+	}
+
+	// Attempt to retrieve password from raw message
+	var password string
+	if err := json.Unmarshal(*jsonMap["password"], &password); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Attempt to set password from input
+	if err := user.SetPassword(password); err != nil {
+		// If empty password was passed, we are missing a parameter
+		if err == models.ErrInvalid {
+			return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+		}
+
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Validate input for user
+	if err := user.Validate(); err != nil {
+		return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+	}
+
+	// Store user in database
+	if err := c.db.InsertUser(user); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Wrap in response and return
+	body, err = json.Marshal(UsersResponse{
+		Users: []*models.User{user},
+	})
+	return http.StatusCreated, body, err
 }
