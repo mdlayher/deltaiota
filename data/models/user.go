@@ -2,7 +2,7 @@ package models
 
 // User represents a user of the application.
 type User struct {
-	ID        int64  `db:"id" json:"id"`
+	ID        uint64 `db:"id" json:"id"`
 	Username  string `db:"username" json:"username"`
 	FirstName string `db:"first_name" json:"firstName"`
 	LastName  string `db:"last_name" json:"lastName"`

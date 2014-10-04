@@ -81,7 +81,7 @@ func (c *context) GetUser(r *http.Request) (int, []byte, error) {
 	}
 
 	// Select single user by ID from the database
-	user, err := c.db.SelectUserByID(int64(id))
+	user, err := c.db.SelectUserByID(id)
 	if err != nil {
 		// If no results found, return HTTP not found
 		if err == sql.ErrNoRows {

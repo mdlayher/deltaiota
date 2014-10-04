@@ -38,7 +38,7 @@ func (db *DB) SelectAllUsers() ([]*models.User, error) {
 }
 
 // SelectUserByID returns a single User by ID from the database.
-func (db *DB) SelectUserByID(id int64) (*models.User, error) {
+func (db *DB) SelectUserByID(id uint64) (*models.User, error) {
 	// Fetch users with matching ID
 	users, err := db.selectUsers(sqlSelectUserByID, id)
 	if err != nil {
@@ -92,7 +92,7 @@ func (tx *Tx) SaveUser(u *models.User) error {
 	}
 
 	// Store generated ID
-	u.ID = id
+	u.ID = uint64(id)
 	return nil
 }
 
