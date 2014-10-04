@@ -20,7 +20,7 @@ type UsersResponse struct {
 // on success, or a non-200 HTTP status code and an error response on failure.
 func (c *context) ListUsers(r *http.Request) (int, util.JSONable) {
 	// Fetch a list of all users from the database
-	users, err := c.db.FetchAllUsers()
+	users, err := c.db.SelectAllUsers()
 	if err != nil {
 		log.Println(err)
 		return http.StatusInternalServerError, nil

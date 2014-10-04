@@ -30,15 +30,15 @@ func (db *DB) SaveUser(u *models.User) error {
 	})
 }
 
-// FetchAllUsers returns a slice of all Users from the database.
-func (db *DB) FetchAllUsers() ([]*models.User, error) {
-	return db.fetchUsers(sqlSelectAllUsers)
+// SelectAllUsers returns a slice of all Users from the database.
+func (db *DB) SelectAllUsers() ([]*models.User, error) {
+	return db.selectUsers(sqlSelectAllUsers)
 }
 
 // SelectUserByID returns a single User by ID from the database.
 func (db *DB) SelectUserByID(id int64) (*models.User, error) {
 	// Fetch users with matching ID
-	users, err := db.fetchUsers(sqlSelectUserByID, id)
+	users, err := db.selectUsers(sqlSelectUserByID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +54,9 @@ func (db *DB) SelectUserByID(id int64) (*models.User, error) {
 	return nil, ErrMultipleResults
 }
 
-// fetchUsers returns a slice of Users from the database, based upon an input
+// selectUsers returns a slice of Users from the database, based upon an input
 // SQL query and arguments
-func (db *DB) fetchUsers(query string, args ...interface{}) ([]*models.User, error) {
+func (db *DB) selectUsers(query string, args ...interface{}) ([]*models.User, error) {
 	// Slice of users to return
 	var users []*models.User
 
