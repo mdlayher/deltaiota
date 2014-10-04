@@ -1,6 +1,8 @@
 package data
 
 import (
+	"database/sql"
+
 	"github.com/mdlayher/deltaiota/data/models"
 )
 
@@ -45,7 +47,7 @@ func (db *DB) SelectUserByID(id int64) (*models.User, error) {
 
 	// Verify only 0 or 1 user returned
 	if len(users) == 0 {
-		return nil, nil
+		return nil, sql.ErrNoRows
 	} else if len(users) == 1 {
 		return users[0], nil
 	}
