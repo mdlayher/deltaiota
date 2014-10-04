@@ -25,8 +25,7 @@ const (
 			, "email"
 			, "phone"
 			, "password"
-			, "salt"
-		) VALUES (?, ?, ?, ?, ?, ?, ?);
+		) VALUES (?, ?, ?, ?, ?, ?);
 	`
 )
 
@@ -86,7 +85,7 @@ func (db *DB) selectUsers(query string, args ...interface{}) ([]*models.User, er
 // InsertUser inserts a new User in the context of the current transaction.
 func (tx *Tx) InsertUser(u *models.User) error {
 	// Execute SQL to insert User
-	result, err := tx.Tx.Exec(sqlInsertUser, u.Username, u.FirstName, u.LastName, u.Email, u.Phone, u.Password(), u.Salt())
+	result, err := tx.Tx.Exec(sqlInsertUser, u.Username, u.FirstName, u.LastName, u.Email, u.Phone, u.Password())
 	if err != nil {
 		return err
 	}

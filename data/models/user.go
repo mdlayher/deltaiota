@@ -1,5 +1,9 @@
 package models
 
+import (
+	"code.google.com/p/go.crypto/bcrypt"
+)
+
 // User represents a user of the application.
 type User struct {
 	ID        uint64 `db:"id" json:"id"`
@@ -10,7 +14,6 @@ type User struct {
 	Phone     string `db:"phone" json:"phone"`
 
 	password string `db:"password"`
-	salt     string `db:"salt"`
 }
 
 // Password returns the value of the unexported password field.
@@ -19,13 +22,7 @@ func (u *User) Password() string {
 	return u.password
 }
 
-// Salt returns the value of the unexported salt field.
-// This method is used for interactions with the database.
-func (u *User) Salt() string {
-	return u.salt
-}
-
-// SetPassword generates a new salt and hashes the input password, storing both fields
+// SetPassword hashes the input password using bcrypt, storing the password
 // within the receiving User struct.
 func (u *User) SetPassword(password string) error {
 	// Check for empty password
@@ -33,9 +30,12 @@ func (u *User) SetPassword(password string) error {
 		return ErrInvalid
 	}
 
-	// TODO(mdlayher): bcrypt password hash, crypto/rand salt generation
-	u.password = password
-	u.salt = ""
+	// Generate password hash using bcrypt
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), 13)
+	if err != nil {
+		return err
+	}
+	u.password = string(hash)
 
 	return nil
 }
@@ -52,7 +52,6 @@ func (u *User) SQLFields() []interface{} {
 		&u.Phone,
 
 		&u.password,
-		&u.salt,
 	}
 }
 
