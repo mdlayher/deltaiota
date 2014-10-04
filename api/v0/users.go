@@ -26,7 +26,10 @@ func (c *context) ListUsers(r *http.Request) (int, util.JSONable) {
 		return http.StatusInternalServerError, nil
 	}
 
-	return http.StatusOK, users
+	// Wrap in response and return
+	return http.StatusOK, UsersResponse{
+		Users: users,
+	}
 }
 
 // GetUser is a util.JSONAPIFunc which returns HTTP 200 and a JSONable user object
@@ -52,5 +55,8 @@ func (c *context) GetUser(r *http.Request) (int, util.JSONable) {
 		return http.StatusInternalServerError, nil
 	}
 
-	return http.StatusOK, user
+	// Wrap in response and return
+	return http.StatusOK, UsersResponse{
+		Users: []models.User{*user},
+	}
 }
