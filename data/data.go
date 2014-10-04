@@ -5,6 +5,7 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"sync"
 
 	// sqlite3 driver
 	_ "github.com/mattn/go-sqlite3"
@@ -19,6 +20,12 @@ var (
 // DB provides the database abstraction layer for the application.
 type DB struct {
 	*sql.DB
+
+	// preparedStmts is a map of query strings to prepared database statements.
+	// On first use, queries are prepared and added to the map for later re-use.
+	// On shutdown, all prepared statementes are cleaned up.
+	preparedStmts map[string]*sql.Stmt
+	stmtMutex     *sync.RWMutex
 }
 
 // Open opens and initializes a database instance.
@@ -30,11 +37,24 @@ func (db *DB) Open(driver string, dsn string) error {
 	}
 	db.DB = d
 
+	// Initialize prepared statement map and mutex
+	db.preparedStmts = make(map[string]*sql.Stmt)
+	db.stmtMutex = new(sync.RWMutex)
+
 	return nil
 }
 
 // Close closes and cleans up a database instance.
 func (db *DB) Close() error {
+	// Clean up all prepared statements
+	db.stmtMutex.Lock()
+	defer db.stmtMutex.Unlock()
+	for _, v := range db.preparedStmts {
+		if err := v.Close(); err != nil {
+			return err
+		}
+	}
+
 	return db.DB.Close()
 }
 
@@ -77,44 +97,65 @@ func (db *DB) withTx(fn func(tx *Tx) error) error {
 	return tx.Commit()
 }
 
-// withPreparedRows creates a new prepared statement with the input SQL query,
+// withPreparedStmt creates or re-uses a prepared statement for the input SQL query.
+// On first use, prepared statements are created and set into the preparedStmts map
+// for later reuse.
+func (db *DB) withPreparedStmt(query string, fn func(stmt *sql.Stmt) error) error {
+	// Check for pre-existing statement
+	db.stmtMutex.RLock()
+	stmt, ok := db.preparedStmts[query]
+	db.stmtMutex.RUnlock()
+	if !ok {
+		// Prepare statement using input query
+		var err error
+		stmt, err = db.Prepare(query)
+		if err != nil {
+			return err
+		}
+
+		// Store statement for reuse
+		db.stmtMutex.Lock()
+		db.preparedStmts[query] = stmt
+		db.stmtMutex.Unlock()
+	}
+
+	// Invoke input closure with prepared statement, return results of closure
+	return fn(stmt)
+}
+
+// withPreparedRows creates or retrieves a prepared statement with the input SQL query,
 // invokes an input closure containing SQL rows, and handles cleanup of rows
-// and prepared statements once the closure is complete.
+// once the closure invocation is complete.
 func (db *DB) withPreparedRows(query string, fn func(rows *Rows) error, args ...interface{}) error {
-	// Prepare statement using input query
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		return err
-	}
+	// Create or retrieve a prepared statement
+	err := db.withPreparedStmt(query, func(stmt *sql.Stmt) error {
+		// Perform input query, sending arguments from caller
+		rows, err := stmt.Query(args...)
+		if err != nil {
+			return err
+		}
 
-	// Perform input query, sending arguments from caller
-	rows, err := stmt.Query(args...)
-	if err != nil {
-		return err
-	}
+		// Invoke input closure with wrapped Rows type, capturing return value for later
+		fnErr := fn(&Rows{
+			Rows: rows,
+		})
 
-	// Invoke input closure with wrapped Rows type, capturing return value for later
-	fnErr := fn(&Rows{
-		Rows: rows,
+		// Close rows
+		if err := rows.Close(); err != nil {
+			return err
+		}
+
+		// Check errors from rows
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		// Return result of closure
+		return fnErr
 	})
 
-	// Close rows
-	if err := rows.Close(); err != nil {
-		return err
-	}
-
-	// Check errors from rows
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	// Close prepared statement
-	if err := stmt.Close(); err != nil {
-		return err
-	}
-
-	// Return result of closure
-	return fnErr
+	// Return any errors
+	return err
 }
 
 // Tx is a wrapped database transaction, which provides additional methods
