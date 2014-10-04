@@ -1,6 +1,7 @@
 package v0
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
@@ -51,6 +52,12 @@ func (c *context) GetUser(r *http.Request) (int, util.JSONable) {
 	// Select single user by ID from the database
 	user, err := c.db.SelectUserByID(id)
 	if err != nil {
+		// If no results found, return HTTP not found
+		if err == sql.ErrNoRows {
+			return http.StatusNotFound, nil
+		}
+
+		// For other errors, log and return server error
 		log.Println(err)
 		return http.StatusInternalServerError, nil
 	}
