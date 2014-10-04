@@ -31,7 +31,7 @@ func (db *DB) SaveUser(u *models.User) error {
 }
 
 // FetchAllUsers returns a slice of all Users from the database.
-func (db *DB) FetchAllUsers() ([]models.User, error) {
+func (db *DB) FetchAllUsers() ([]*models.User, error) {
 	return db.fetchUsers(sqlSelectAllUsers)
 }
 
@@ -47,7 +47,7 @@ func (db *DB) SelectUserByID(id int64) (*models.User, error) {
 	if len(users) == 0 {
 		return nil, nil
 	} else if len(users) == 1 {
-		return &users[0], nil
+		return users[0], nil
 	}
 
 	// More than one result returned
@@ -56,9 +56,9 @@ func (db *DB) SelectUserByID(id int64) (*models.User, error) {
 
 // fetchUsers returns a slice of Users from the database, based upon an input
 // SQL query and arguments
-func (db *DB) fetchUsers(query string, args ...interface{}) ([]models.User, error) {
+func (db *DB) fetchUsers(query string, args ...interface{}) ([]*models.User, error) {
 	// Slice of users to return
-	var users []models.User
+	var users []*models.User
 
 	// Invoke closure with prepared statement and wrapped rows,
 	// passing any arguments from the caller
@@ -95,9 +95,9 @@ func (tx *Tx) SaveUser(u *models.User) error {
 }
 
 // ScanUsers returns a slice of Users from wrapped rows.
-func (r *Rows) ScanUsers() ([]models.User, error) {
+func (r *Rows) ScanUsers() ([]*models.User, error) {
 	// Iterate all returned rows
-	var users []models.User
+	var users []*models.User
 	for r.Rows.Next() {
 		// Scan new user into struct, using specified fields
 		u := new(models.User)
@@ -110,8 +110,8 @@ func (r *Rows) ScanUsers() ([]models.User, error) {
 			continue
 		}
 
-		// Dereference and append user to output slice
-		users = append(users, *u)
+		// Append user to output slice
+		users = append(users, u)
 	}
 
 	return users, nil

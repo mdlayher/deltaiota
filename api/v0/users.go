@@ -13,7 +13,7 @@ import (
 
 // UsersResponse is the output response for the Users API
 type UsersResponse struct {
-	Users []models.User `json:"users"`
+	Users []*models.User `json:"users"`
 }
 
 // ListUsers is a util.JSONAPIFunc which returns HTTP 200 and a JSONable list of users
@@ -57,6 +57,6 @@ func (c *context) GetUser(r *http.Request) (int, util.JSONable) {
 
 	// Wrap in response and return
 	return http.StatusOK, UsersResponse{
-		Users: []models.User{*user},
+		Users: []*models.User{user},
 	}
 }
