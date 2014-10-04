@@ -20,15 +20,21 @@ const (
 	sqlInsertUser = `
 		INSERT INTO users (
 			"username"
-		) VALUES (?);
+			, "first_name"
+			, "last_name"
+			, "email"
+			, "phone"
+			, "password"
+			, "salt"
+		) VALUES (?, ?, ?, ?, ?, ?, ?);
 	`
 )
 
 // SaveUser starts a transaction, inserts a new User, and attempts to commit
 // the transaction.
-func (db *DB) SaveUser(u *models.User) error {
+func (db *DB) InsertUser(u *models.User) error {
 	return db.withTx(func(tx *Tx) error {
-		return tx.SaveUser(u)
+		return tx.InsertUser(u)
 	})
 }
 
@@ -77,10 +83,10 @@ func (db *DB) selectUsers(query string, args ...interface{}) ([]*models.User, er
 	return users, err
 }
 
-// SaveUser inserts a new User in the context of the current transaction.
-func (tx *Tx) SaveUser(u *models.User) error {
+// InsertUser inserts a new User in the context of the current transaction.
+func (tx *Tx) InsertUser(u *models.User) error {
 	// Execute SQL to insert User
-	result, err := tx.Tx.Exec(sqlInsertUser)
+	result, err := tx.Tx.Exec(sqlInsertUser, u.Username, u.FirstName, u.LastName, u.Email, u.Phone, u.Password(), u.Salt())
 	if err != nil {
 		return err
 	}
