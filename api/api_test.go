@@ -26,11 +26,11 @@ func TestNewServeMux(t *testing.T) {
 			code   int
 		}{
 			// Root path
-			{"GET", "/", 404},
+			{"GET", "/", http.StatusNotFound},
 			// API v0 root
-			{"GET", v0.APIPrefix, 404},
+			{"GET", v0.APIPrefix, http.StatusNotFound},
 			// API v1 root
-			{"GET", "/api/v1", 404},
+			{"GET", "/api/v1", http.StatusNotFound},
 		}
 
 		// Iterate and perform requests for all tests
