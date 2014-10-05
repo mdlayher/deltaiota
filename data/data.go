@@ -7,8 +7,7 @@ import (
 	"errors"
 	"sync"
 
-	// sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -70,6 +69,18 @@ func (db *DB) Begin() (*Tx, error) {
 	return &Tx{
 		Tx: dbtx,
 	}, nil
+}
+
+// IsConstraintFailure returns whether or not an input error is due to a failed
+// database constraint, such as an insert of an item which is not unique.
+func (db *DB) IsConstraintFailure(err error) bool {
+	// sqlite3-specific constraint failure checking
+	if sqliteErr, ok := err.(sqlite3.Error); ok {
+		return sqliteErr.Code == sqlite3.ErrConstraint
+	}
+
+	// Not a constraint failure
+	return false
 }
 
 // withTx creates a new wrapped transaction, invokes an input closure, and
