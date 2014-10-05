@@ -22,6 +22,7 @@ const (
 
 	// HTTP POST
 	userConflict          = "user already exists"
+	userJSONSyntax        = "invalid JSON request"
 	userMissingParameters = "missing required parameters"
 )
 
@@ -34,6 +35,7 @@ var usersCode = map[string]int{
 
 	// HTTP POST
 	userConflict:          http.StatusConflict,
+	userJSONSyntax:        http.StatusBadRequest,
 	userMissingParameters: http.StatusBadRequest,
 }
 
@@ -122,6 +124,11 @@ func (c *context) PostUser(r *http.Request) (int, []byte, error) {
 	// Unmarshal body into a User
 	user := new(models.User)
 	if err := json.Unmarshal(body, user); err != nil {
+		// Check for bad input JSON
+		if _, ok := err.(*json.SyntaxError); ok {
+			return usersCode[userJSONSyntax], usersJSON[userJSONSyntax], nil
+		}
+
 		return http.StatusInternalServerError, nil, err
 	}
 
