@@ -21,6 +21,7 @@ const (
 	userNotFound  = "user not found"
 
 	// HTTP POST
+	userConflict          = "user already exists"
 	userMissingParameters = "missing required parameters"
 )
 
@@ -32,6 +33,7 @@ var usersCode = map[string]int{
 	userNotFound:  http.StatusNotFound,
 
 	// HTTP POST
+	userConflict:          http.StatusConflict,
 	userMissingParameters: http.StatusBadRequest,
 }
 
@@ -157,6 +159,11 @@ func (c *context) PostUser(r *http.Request) (int, []byte, error) {
 
 	// Store user in database
 	if err := c.db.InsertUser(user); err != nil {
+		// Check for constraint failure, meaning user already exists
+		if c.db.IsConstraintFailure(err) {
+			return usersCode[userConflict], usersJSON[userConflict], nil
+		}
+
 		return http.StatusInternalServerError, nil, err
 	}
 
