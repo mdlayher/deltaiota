@@ -4,11 +4,14 @@ package ditest
 
 import (
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/mdlayher/deltaiota/bindata"
 	"github.com/mdlayher/deltaiota/data"
+	"github.com/mdlayher/deltaiota/data/models"
 )
 
 // WithTemporaryDB generates a temporary copy of the embedded sqlite3 database from
@@ -49,4 +52,32 @@ func WithTemporaryDB(fn func(db *data.DB)) error {
 
 	// Remove temporary directory and database
 	return os.RemoveAll(tmpDir)
+}
+
+// MockUser generates a single User with mock data, used for testing.
+// The user is randomly generated, but is not guaranteed to be unique.
+func MockUser() *models.User {
+	return &models.User{
+		Username:  randomString(10),
+		FirstName: randomString(10),
+		LastName:  randomString(10),
+	}
+}
+
+// randomString generates a random string of length n.
+// Adapter from: http://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-golang
+func randomString(n int) string {
+	// Seed random number generator
+	rand.Seed(time.Now().UnixNano())
+
+	// Random letters slice
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	// Generate slice of length n
+	str := make([]rune, n)
+	for i := range str {
+		str[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(str)
 }
