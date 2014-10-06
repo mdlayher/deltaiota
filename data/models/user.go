@@ -48,6 +48,16 @@ func (u *User) SetPassword(password string) error {
 	return nil
 }
 
+// SetTestPassword directly stores the input password in the receiving
+// User struct.
+//
+// This method should ONLY be used for testing, to save time on bcrypt hashing
+// for test user creation.
+func (u *User) SetTestPassword(password string) {
+	u.password = "test-password-" + password
+	return
+}
+
 // SQLReadFields returns the correct field order to scan SQL row results into the
 // receiving User struct.
 func (u *User) SQLReadFields() []interface{} {
