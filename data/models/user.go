@@ -59,7 +59,7 @@ func (u *User) SQLFields() []interface{} {
 // valid input.
 func (u *User) Validate() error {
 	// Check for required fields
-	if u.Username == "" || u.FirstName == "" || u.LastName == "" || u.password == "" {
+	if u.Username == "" || u.FirstName == "" || u.LastName == "" || u.Email == "" || u.password == "" {
 		return ErrInvalid
 	}
 

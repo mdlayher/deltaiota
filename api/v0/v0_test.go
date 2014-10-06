@@ -47,19 +47,19 @@ func TestNewServeMux(t *testing.T) {
 			// Create user, empty password field
 			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":""}`)},
 			// Create user, missing username
-			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":"test","firstName":"test","lastName":"test"}`)},
+			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":"test","firstName":"test","lastName":"test","email":"test@test.com"}`)},
 			// Create user, missing first name
-			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":"test","lastName":"test","username":"test"}`)},
+			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":"test","lastName":"test","username":"test","email":"test@test.com"}`)},
 			// Create user, missing last name
-			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":"test","firstName":"test","username":"test"}`)},
+			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":"test","firstName":"test","username":"test","email":"test@test.com"}`)},
+			// Create user, missing email
+			{"POST", "/users", http.StatusBadRequest, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test"}`)},
 			// Create user, valid request
-			{"POST", "/users", http.StatusCreated, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test"}`)},
+			{"POST", "/users", http.StatusCreated, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test","email":"test@test.com"}`)},
 			// Create user, duplicate username
-			{"POST", "/users", http.StatusConflict, []byte(`{"password":"test","firstName":"test2","lastName":"test2","username":"test"}`)},
-			// Create user, duplicate first name
-			{"POST", "/users", http.StatusConflict, []byte(`{"password":"test","firstName":"test","lastName":"test2","username":"test2"}`)},
-			// Create user, duplicate last name
-			{"POST", "/users", http.StatusConflict, []byte(`{"password":"test","firstName":"test2","lastName":"test","username":"test2"}`)},
+			{"POST", "/users", http.StatusConflict, []byte(`{"password":"test","firstName":"test2","lastName":"test2","username":"test","email":"test2@test.com"}`)},
+			// Create user, duplicate email
+			{"POST", "/users", http.StatusConflict, []byte(`{"password":"test","firstName":"test2","lastName":"test2","username":"test2","email":"test@test.com"}`)},
 
 			// Get user, which now exists
 			{"GET", "/users/1", http.StatusOK, nil},

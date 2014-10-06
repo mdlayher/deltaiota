@@ -201,7 +201,7 @@ func TestPostUser(t *testing.T) {
 		}
 
 		// JSON used to generate a temporary user
-		mockUserJSON := []byte(`{"id": 1, "password":"test","firstName":"test","lastName":"test","username":"test"}`)
+		mockUserJSON := []byte(`{"id": 1, "password":"test","firstName":"test","lastName":"test","username":"test","email":"test@test.com"}`)
 
 		// Unmarshal into mock user
 		user := new(models.User)
@@ -223,15 +223,19 @@ func TestPostUser(t *testing.T) {
 			// Empty password
 			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":""}`)},
 			// Missing username
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","lastName":"test"}`)},
+			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","lastName":"test","email":"test@test.com"}`)},
 			// Missing first name
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","lastName":"test","username":"test"}`)},
+			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","lastName":"test","username":"test","email":"test@test.com"}`)},
 			// Missing last name
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","username":"test"}`)},
+			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","username":"test","email":"test@test.com"}`)},
+			// Missing email
+			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test"}`)},
 			// Valid request
 			{http.StatusCreated, "", mockUserJSON},
 			// Duplicate username
-			{http.StatusConflict, userConflict, []byte(`{"password":"test2","firstName":"test2","lastName":"test2","username":"test"}`)},
+			{http.StatusConflict, userConflict, []byte(`{"password":"test2","firstName":"test2","lastName":"test2","username":"test","email":"test2@test.com"}`)},
+			// Duplicate email
+			{http.StatusConflict, userConflict, []byte(`{"password":"test2","firstName":"test2","lastName":"test2","username":"test2","email":"test@test.com"}`)},
 		}
 
 		// Iterate and run tests
