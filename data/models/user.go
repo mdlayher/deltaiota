@@ -18,10 +18,14 @@ type User struct {
 	password string `db:"password"`
 }
 
-// Password returns the value of the unexported password field.
-// This method is used for interactions with the database.
-func (u *User) Password() string {
-	return u.password
+// CopyFrom copies fields from an input User into the receiving User struct.
+func (u *User) CopyFrom(user *User) {
+	u.Username = user.Username
+	u.FirstName = user.FirstName
+	u.LastName = user.LastName
+	u.Email = user.Email
+	u.Phone = user.Phone
+	u.password = user.password
 }
 
 // SetPassword hashes the input password using bcrypt, storing the password
@@ -44,9 +48,9 @@ func (u *User) SetPassword(password string) error {
 	return nil
 }
 
-// SQLFields returns the correct field order to scan SQL row results into the
+// SQLReadFields returns the correct field order to scan SQL row results into the
 // receiving User struct.
-func (u *User) SQLFields() []interface{} {
+func (u *User) SQLReadFields() []interface{} {
 	return []interface{}{
 		&u.ID,
 		&u.Username,
@@ -56,6 +60,23 @@ func (u *User) SQLFields() []interface{} {
 		&u.Phone,
 
 		&u.password,
+	}
+}
+
+// SQLWriteFields returns the correct field order for SQL write actions (such as
+// insert or update), for the receiving User struct.
+func (u *User) SQLWriteFields() []interface{} {
+	return []interface{}{
+		u.Username,
+		u.FirstName,
+		u.LastName,
+		u.Email,
+		u.Phone,
+
+		u.password,
+
+		// Last argument for WHERE clause
+		u.ID,
 	}
 }
 
