@@ -3,6 +3,7 @@
 package ditest
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -57,11 +58,17 @@ func WithTemporaryDB(fn func(db *data.DB)) error {
 // MockUser generates a single User with mock data, used for testing.
 // The user is randomly generated, but is not guaranteed to be unique.
 func MockUser() *models.User {
-	return &models.User{
+	// Generate user
+	user := &models.User{
 		Username:  randomString(10),
 		FirstName: randomString(10),
 		LastName:  randomString(10),
+		Email:     fmt.Sprintf("%s@%s.com", randomString(6), randomString(6)),
 	}
+
+	// Generate test password, only used for duration of test
+	user.SetTestPassword(randomString(10))
+	return user
 }
 
 // randomString generates a random string of length n.
