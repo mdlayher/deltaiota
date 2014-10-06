@@ -29,7 +29,9 @@ func (u *User) Password() string {
 func (u *User) SetPassword(password string) error {
 	// Check for empty password
 	if password == "" {
-		return ErrEmpty
+		return &EmptyFieldError{
+			Field: "password",
+		}
 	}
 
 	// Generate password hash using bcrypt
@@ -61,14 +63,40 @@ func (u *User) SQLFields() []interface{} {
 // valid input.
 func (u *User) Validate() error {
 	// Check for required fields
-	if u.Username == "" || u.FirstName == "" || u.LastName == "" || u.Email == "" || u.password == "" {
-		return ErrEmpty
+	if u.Username == "" {
+		return &EmptyFieldError{
+			Field: "username",
+		}
+	}
+	if u.FirstName == "" {
+		return &EmptyFieldError{
+			Field: "firstName",
+		}
+	}
+	if u.LastName == "" {
+		return &EmptyFieldError{
+			Field: "lastName",
+		}
+	}
+	if u.Email == "" {
+		return &EmptyFieldError{
+			Field: "email",
+		}
+	}
+	if u.password == "" {
+		return &EmptyFieldError{
+			Field: "password",
+		}
 	}
 
 	// Perform basic validation of email address
 	address, err := mail.ParseAddress(u.Email)
 	if err != nil {
-		return ErrInvalid
+		return &InvalidFieldError{
+			Field:   "email",
+			Err:     err,
+			Details: "could not parse valid email address",
+		}
 	}
 	u.Email = address.Address
 

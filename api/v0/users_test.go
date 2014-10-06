@@ -220,18 +220,18 @@ func TestPostUser(t *testing.T) {
 			{http.StatusBadRequest, userJSONSyntax, nil},
 			// Bad JSON
 			{http.StatusBadRequest, userJSONSyntax, []byte(`{`)},
-			// Empty password
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":""}`)},
+			// Missing password
+			{http.StatusBadRequest, "empty field: password", []byte(`{"password":""}`)},
 			// Missing username
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","lastName":"test","email":"test@test.com"}`)},
+			{http.StatusBadRequest, "empty field: username", []byte(`{"password":"test","firstName":"test","lastName":"test","email":"test@test.com"}`)},
 			// Missing first name
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","lastName":"test","username":"test","email":"test@test.com"}`)},
+			{http.StatusBadRequest, "empty field: firstName", []byte(`{"password":"test","lastName":"test","username":"test","email":"test@test.com"}`)},
 			// Missing last name
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","username":"test","email":"test@test.com"}`)},
+			{http.StatusBadRequest, "empty field: lastName", []byte(`{"password":"test","firstName":"test","username":"test","email":"test@test.com"}`)},
 			// Missing email
-			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test"}`)},
+			{http.StatusBadRequest, "empty field: email", []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test"}`)},
 			// Invalid email
-			{http.StatusBadRequest, userInvalidParameters, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test","email":"test"}`)},
+			{http.StatusBadRequest, "invalid field: email (could not parse valid email address)", []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test","email":"test"}`)},
 			// Valid request
 			{http.StatusCreated, "", mockUserJSON},
 			// Duplicate username

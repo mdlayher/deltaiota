@@ -140,7 +140,17 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 
 	// Ensure password key was passed
 	if _, ok := jsonMap["password"]; !ok {
-		return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+		// Set code for missing parameter
+		code := usersCode[userMissingParameters]
+
+		// Generate empty field error
+		emptyErr := &models.EmptyFieldError{
+			Field: "password",
+		}
+
+		// Return customized error object
+		body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
+		return code, body, err
 	}
 
 	// Attempt to retrieve password from raw message
@@ -152,8 +162,13 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 	// Attempt to set password from input
 	if err := user.SetPassword(password); err != nil {
 		// If empty password was passed, we are missing a parameter
-		if err == models.ErrEmpty {
-			return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+		if emptyErr, ok := err.(*models.EmptyFieldError); ok {
+			// Set code for missing parameter
+			code := usersCode[userMissingParameters]
+
+			// Return customized error object
+			body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
+			return code, body, err
 		}
 
 		return http.StatusInternalServerError, nil, err
@@ -162,13 +177,23 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 	// Validate input for user
 	if err := user.Validate(); err != nil {
 		// If a required field was empty, report missing parameters
-		if err == models.ErrEmpty {
-			return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+		if emptyErr, ok := err.(*models.EmptyFieldError); ok {
+			// Set code for missing parameter
+			code := usersCode[userMissingParameters]
+
+			// Return customized error object
+			body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
+			return code, body, err
 		}
 
 		// If a field was invalid, report invalid input
-		if err == models.ErrInvalid {
-			return usersCode[userInvalidParameters], usersJSON[userInvalidParameters], nil
+		if invalidErr, ok := err.(*models.InvalidFieldError); ok {
+			// Set code for missing parameter
+			code := usersCode[userInvalidParameters]
+
+			// Return customized error object
+			body, err := json.Marshal(util.ErrRes(code, invalidErr.Error()))
+			return code, body, err
 		}
 
 		// For any other errors, report a server error
