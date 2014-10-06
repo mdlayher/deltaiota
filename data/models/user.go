@@ -1,6 +1,8 @@
 package models
 
 import (
+	"net/mail"
+
 	"code.google.com/p/go.crypto/bcrypt"
 )
 
@@ -27,7 +29,7 @@ func (u *User) Password() string {
 func (u *User) SetPassword(password string) error {
 	// Check for empty password
 	if password == "" {
-		return ErrInvalid
+		return ErrEmpty
 	}
 
 	// Generate password hash using bcrypt
@@ -60,8 +62,15 @@ func (u *User) SQLFields() []interface{} {
 func (u *User) Validate() error {
 	// Check for required fields
 	if u.Username == "" || u.FirstName == "" || u.LastName == "" || u.Email == "" || u.password == "" {
+		return ErrEmpty
+	}
+
+	// Perform basic validation of email address
+	address, err := mail.ParseAddress(u.Email)
+	if err != nil {
 		return ErrInvalid
 	}
+	u.Email = address.Address
 
 	return nil
 }

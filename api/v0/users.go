@@ -20,6 +20,7 @@ const (
 
 	// HTTP POST
 	userConflict          = "user already exists"
+	userInvalidParameters = "invalid parameters"
 	userJSONSyntax        = "invalid JSON request"
 	userMissingParameters = "missing required parameters"
 )
@@ -33,6 +34,7 @@ var usersCode = map[string]int{
 
 	// HTTP POST
 	userConflict:          http.StatusConflict,
+	userInvalidParameters: http.StatusBadRequest,
 	userJSONSyntax:        http.StatusBadRequest,
 	userMissingParameters: http.StatusBadRequest,
 }
@@ -150,7 +152,7 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 	// Attempt to set password from input
 	if err := user.SetPassword(password); err != nil {
 		// If empty password was passed, we are missing a parameter
-		if err == models.ErrInvalid {
+		if err == models.ErrEmpty {
 			return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
 		}
 
@@ -159,7 +161,18 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 
 	// Validate input for user
 	if err := user.Validate(); err != nil {
-		return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+		// If a required field was empty, report missing parameters
+		if err == models.ErrEmpty {
+			return usersCode[userMissingParameters], usersJSON[userMissingParameters], nil
+		}
+
+		// If a field was invalid, report invalid input
+		if err == models.ErrInvalid {
+			return usersCode[userInvalidParameters], usersJSON[userInvalidParameters], nil
+		}
+
+		// For any other errors, report a server error
+		return http.StatusInternalServerError, nil, err
 	}
 
 	// Store user in database

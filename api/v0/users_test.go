@@ -230,6 +230,8 @@ func TestPostUser(t *testing.T) {
 			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","username":"test","email":"test@test.com"}`)},
 			// Missing email
 			{http.StatusBadRequest, userMissingParameters, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test"}`)},
+			// Invalid email
+			{http.StatusBadRequest, userInvalidParameters, []byte(`{"password":"test","firstName":"test","lastName":"test","username":"test","email":"test"}`)},
 			// Valid request
 			{http.StatusCreated, "", mockUserJSON},
 			// Duplicate username

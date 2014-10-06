@@ -5,6 +5,10 @@ import (
 )
 
 var (
+	// ErrEmpty is returned when a model contains empty fields which
+	// are required.
+	ErrEmpty = errors.New("models: empty required field")
+
 	// ErrInvalid is returned when a model fails a call to Validate.
 	ErrInvalid = errors.New("models: invalid data")
 )
