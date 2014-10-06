@@ -115,92 +115,18 @@ func (c *context) GetUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 // and a JSON user object on success, or a non-200 HTTP status code and an
 // error response on failure.
 func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error) {
-	// Read entire request body
-	body, err := ioutil.ReadAll(r.Body)
+	// Read and validate request input into a User struct
+	user, code, body, err := c.jsonToUser(r)
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
-	// Unmarshal body into a User
-	user := new(models.User)
-	if err := json.Unmarshal(body, user); err != nil {
-		// Check for bad input JSON
-		if _, ok := err.(*json.SyntaxError); ok {
-			return usersCode[userJSONSyntax], usersJSON[userJSONSyntax], nil
-		}
-
-		return http.StatusInternalServerError, nil, err
+	// If a body was written (probably client error), return now
+	if body != nil {
+		return code, body, nil
 	}
 
-	// Unmarshal JSON into raw message for further processing
-	var jsonMap map[string]*json.RawMessage
-	if err := json.Unmarshal(body, &jsonMap); err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
-
-	// Ensure password key was passed
-	if _, ok := jsonMap["password"]; !ok {
-		// Set code for missing parameter
-		code := usersCode[userMissingParameters]
-
-		// Generate empty field error
-		emptyErr := &models.EmptyFieldError{
-			Field: "password",
-		}
-
-		// Return customized error object
-		body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
-		return code, body, err
-	}
-
-	// Attempt to retrieve password from raw message
-	var password string
-	if err := json.Unmarshal(*jsonMap["password"], &password); err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
-
-	// Attempt to set password from input
-	if err := user.SetPassword(password); err != nil {
-		// If empty password was passed, we are missing a parameter
-		if emptyErr, ok := err.(*models.EmptyFieldError); ok {
-			// Set code for missing parameter
-			code := usersCode[userMissingParameters]
-
-			// Return customized error object
-			body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
-			return code, body, err
-		}
-
-		return http.StatusInternalServerError, nil, err
-	}
-
-	// Validate input for user
-	if err := user.Validate(); err != nil {
-		// If a required field was empty, report missing parameters
-		if emptyErr, ok := err.(*models.EmptyFieldError); ok {
-			// Set code for missing parameter
-			code := usersCode[userMissingParameters]
-
-			// Return customized error object
-			body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
-			return code, body, err
-		}
-
-		// If a field was invalid, report invalid input
-		if invalidErr, ok := err.(*models.InvalidFieldError); ok {
-			// Set code for missing parameter
-			code := usersCode[userInvalidParameters]
-
-			// Return customized error object
-			body, err := json.Marshal(util.ErrRes(code, invalidErr.Error()))
-			return code, body, err
-		}
-
-		// For any other errors, report a server error
-		return http.StatusInternalServerError, nil, err
-	}
-
-	// Store user in database
+	// No body written, all checks passed, so insert new user
 	if err := c.db.InsertUser(user); err != nil {
 		// Check for constraint failure, meaning user already exists
 		if c.db.IsConstraintFailure(err) {
@@ -215,4 +141,99 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 		Users: []*models.User{user},
 	})
 	return http.StatusCreated, body, err
+}
+
+// jsonToUser reads the JSON body of an incoming HTTP request, validates that
+// all required fields are set, and returns a User on success.
+// On failure, it will return a message body or an error, causing the caller to
+// immediately send the result.
+func (c *context) jsonToUser(r *http.Request) (*models.User, int, []byte, error) {
+	// Read entire request body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, nil, err
+	}
+
+	// Unmarshal body into a User
+	user := new(models.User)
+	if err := json.Unmarshal(body, user); err != nil {
+		// Check for bad input JSON
+		if _, ok := err.(*json.SyntaxError); ok {
+			return nil, usersCode[userJSONSyntax], usersJSON[userJSONSyntax], nil
+		}
+
+		return nil, http.StatusInternalServerError, nil, err
+	}
+
+	// Unmarshal JSON into raw message for further processing
+	var jsonMap map[string]*json.RawMessage
+	if err := json.Unmarshal(body, &jsonMap); err != nil {
+		return nil, http.StatusInternalServerError, nil, err
+	}
+
+	// Ensure password key was passed
+	if _, ok := jsonMap["password"]; !ok {
+		// Set code for missing parameter
+		code := usersCode[userMissingParameters]
+
+		// Generate empty field error
+		emptyErr := &models.EmptyFieldError{
+			Field: "password",
+		}
+
+		// Return customized error object
+		body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
+		return nil, code, body, err
+	}
+
+	// Attempt to retrieve password from raw message
+	var password string
+	if err := json.Unmarshal(*jsonMap["password"], &password); err != nil {
+		return nil, http.StatusInternalServerError, nil, err
+	}
+
+	// Attempt to set password from input
+	if err := user.SetPassword(password); err != nil {
+		// If empty password was passed, we are missing a parameter
+		if emptyErr, ok := err.(*models.EmptyFieldError); ok {
+			// Set code for missing parameter
+			code := usersCode[userMissingParameters]
+
+			// Return customized error object
+			body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
+			return nil, code, body, err
+		}
+
+		return nil, http.StatusInternalServerError, nil, err
+	}
+
+	// Validate input for user
+	if err := user.Validate(); err != nil {
+		// If a required field was empty, report missing parameters
+		if emptyErr, ok := err.(*models.EmptyFieldError); ok {
+			// Set code for missing parameter
+			code := usersCode[userMissingParameters]
+
+			// Return customized error object
+			body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
+			return nil, code, body, err
+		}
+
+		// If a field was invalid, report invalid input
+		if invalidErr, ok := err.(*models.InvalidFieldError); ok {
+			// Set code for missing parameter
+			code := usersCode[userInvalidParameters]
+
+			// Return customized error object
+			body, err := json.Marshal(util.ErrRes(code, invalidErr.Error()))
+			return nil, code, body, err
+		}
+
+		// For any other errors, report a server error
+		return nil, http.StatusInternalServerError, nil, err
+	}
+
+	// All validations passed, return User with no body so processing
+	// can continue in caller
+	return user, http.StatusOK, nil, nil
 }
