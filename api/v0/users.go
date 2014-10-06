@@ -9,8 +9,6 @@ import (
 
 	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data/models"
-
-	"github.com/gorilla/mux"
 )
 
 // JSON Users API, human-readable client error responses.
@@ -64,7 +62,7 @@ type UsersResponse struct {
 
 // ListUsers is a util.JSONAPIFunc which returns HTTP 200 and a JSON list of users
 // on success, or a non-200 HTTP status code and an error response on failure.
-func (c *context) ListUsers(r *http.Request) (int, []byte, error) {
+func (c *context) ListUsers(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Fetch a list of all users from the database
 	users, err := c.db.SelectAllUsers()
 	if err != nil {
@@ -80,9 +78,9 @@ func (c *context) ListUsers(r *http.Request) (int, []byte, error) {
 
 // GetUser is a util.JSONAPIFunc which returns HTTP 200 and a JSON user object
 // on success, or a non-200 HTTP status code and an error response on failure.
-func (c *context) GetUser(r *http.Request) (int, []byte, error) {
+func (c *context) GetUser(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Fetch input user ID
-	strID, ok := mux.Vars(r)["id"]
+	strID, ok := vars["id"]
 	if !ok {
 		return usersCode[userMissingID], usersJSON[userMissingID], nil
 	}
@@ -114,7 +112,7 @@ func (c *context) GetUser(r *http.Request) (int, []byte, error) {
 // PostUser is a util.JSONAPIFunc which creates a User and returns HTTP 201
 // and a JSON user object on success, or a non-200 HTTP status code and an
 // error response on failure.
-func (c *context) PostUser(r *http.Request) (int, []byte, error) {
+func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Read entire request body
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

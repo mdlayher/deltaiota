@@ -14,19 +14,19 @@ import (
 // http.HandlerFunc for one or more input JSONAPIFunc.
 func TestJSONAPIHandler(t *testing.T) {
 	// emptyFn returns HTTP OK and nothing else
-	emptyFn := func(r *http.Request) (int, []byte, error) {
+	emptyFn := func(r *http.Request, vars Vars) (int, []byte, error) {
 		return http.StatusOK, nil, nil
 	}
 
 	// bodyFn returns HTTP OK and a small message body
 	expBody := []byte("hello world")
-	bodyFn := func(r *http.Request) (int, []byte, error) {
+	bodyFn := func(r *http.Request, vars Vars) (int, []byte, error) {
 		return http.StatusOK, expBody, nil
 	}
 
 	// errFn returns HTTP Internal Server Error and an error
 	expErr := errors.New("a fake test error")
-	errFn := func(r *http.Request) (int, []byte, error) {
+	errFn := func(r *http.Request, vars Vars) (int, []byte, error) {
 		return http.StatusInternalServerError, nil, expErr
 	}
 

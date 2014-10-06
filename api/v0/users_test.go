@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data"
 	"github.com/mdlayher/deltaiota/data/models"
 	"github.com/mdlayher/deltaiota/ditest"
@@ -25,7 +26,7 @@ func TestListUsers(t *testing.T) {
 		var lastUser *models.User
 		for i := 0; i < 1; i++ {
 			// Fetch list of current users
-			code, body, err := c.ListUsers(nil)
+			code, body, err := c.ListUsers(nil, util.Vars{})
 			if err != nil {
 				t.Error(err)
 				return
