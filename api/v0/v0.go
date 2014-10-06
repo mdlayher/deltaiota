@@ -33,6 +33,7 @@ func NewServeMux(db *data.DB) http.Handler {
 	r.Handle("/users", util.JSONAPIHandler(c.ListUsers)).Methods("GET")
 	r.Handle("/users/{id}", util.JSONAPIHandler(c.GetUser)).Methods("GET")
 	r.Handle("/users", util.JSONAPIHandler(c.PostUser)).Methods("POST")
+	r.Handle("/users/{id}", util.JSONAPIHandler(c.PutUser)).Methods("PUT")
 
 	return r
 }

@@ -143,6 +143,65 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 	return http.StatusCreated, body, err
 }
 
+// PutUser is a util.JSONAPIFunc which updates a User and returns HTTP 200
+// and a JSON user object on success, or a non-200 HTTP status code and an
+// error response on failure.
+func (c *context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) {
+	// Fetch input user ID
+	strID, ok := vars["id"]
+	if !ok {
+		return usersCode[userMissingID], usersJSON[userMissingID], nil
+	}
+
+	// Convert string to integer
+	id, err := strconv.ParseUint(strID, 10, 64)
+	if err != nil {
+		return usersCode[userInvalidID], usersJSON[userInvalidID], nil
+	}
+
+	// Select single user by ID from the database
+	user, err := c.db.SelectUserByID(id)
+	if err != nil {
+		// If no results found, return HTTP not found
+		if err == sql.ErrNoRows {
+			return usersCode[userNotFound], usersJSON[userNotFound], nil
+		}
+
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Read and validate request input into a User struct
+	newUser, code, body, err := c.jsonToUser(r)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// If a body was written (probably client error), return now
+	if body != nil {
+		return code, body, nil
+	}
+
+	// No body written, all checks passed, so update existing user with
+	// new fields
+	//  - Email already validated in jsonToUser
+	//  - Password already hashed in jsonToUser
+	user.CopyFrom(newUser)
+	if err := c.db.UpdateUser(user); err != nil {
+		// Check for constraint failure, meaning a unique check failed
+		if c.db.IsConstraintFailure(err) {
+			return usersCode[userConflict], usersJSON[userConflict], nil
+		}
+
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Wrap in response and return
+	body, err = json.Marshal(UsersResponse{
+		Users: []*models.User{user},
+	})
+	return http.StatusOK, body, err
+}
+
 // jsonToUser reads the JSON body of an incoming HTTP request, validates that
 // all required fields are set, and returns a User on success.
 // On failure, it will return a message body or an error, causing the caller to
