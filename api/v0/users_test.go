@@ -27,29 +27,34 @@ func TestListUsers(t *testing.T) {
 			// Fetch list of current users
 			code, body, err := c.ListUsers(nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
+				return
 			}
 
 			// Ensure proper HTTP status code
 			if code != http.StatusOK {
-				t.Fatalf("unexpected code: %v != %v", code, http.StatusOK)
+				t.Errorf("unexpected code: %v != %v", code, http.StatusOK)
+				return
 			}
 
 			// Unmarshal response body
 			var res UsersResponse
 			if err := json.Unmarshal(body, &res); err != nil {
-				t.Fatal(err)
+				t.Error(err)
+				return
 			}
 
 			// Verify length of users slice
 			if len(res.Users) != i {
-				t.Fatalf("unexpected number of users returned: %v", res.Users)
+				t.Errorf("unexpected number of users returned: %v", res.Users)
+				return
 			}
 
 			// Check if generated user returned and break loop on second run
 			if i == 1 {
 				if res.Users[0] != lastUser {
-					t.Fatalf("unexpected User: %v != %v", res.Users[0], lastUser)
+					t.Errorf("unexpected User: %v != %v", res.Users[0], lastUser)
+					return
 				}
 
 				break
@@ -58,7 +63,8 @@ func TestListUsers(t *testing.T) {
 			// Generate and save a mock user in the database
 			lastUser = ditest.MockUser()
 			if err := c.db.InsertUser(lastUser); err != nil {
-				t.Fatal(err)
+				t.Error(err)
+				return
 			}
 		}
 	})
