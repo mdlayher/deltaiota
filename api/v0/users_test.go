@@ -230,8 +230,20 @@ func TestGetUser(t *testing.T) {
 			}
 
 			// Verify user is the same as the mock we created earlier
-			if !reflect.DeepEqual(user, res.Users[0]) {
-				t.Errorf("unexpected user: %v != %v", user, res.Users[0])
+			if res.Users[0].Username != user.Username {
+				t.Errorf("unexpected User username: %v != %v", res.Users[0].Username, user.Username)
+			}
+
+			if res.Users[0].FirstName != user.FirstName {
+				t.Errorf("unexpected User first name: %v != %v", res.Users[0].FirstName, user.FirstName)
+			}
+
+			if res.Users[0].LastName != user.LastName {
+				t.Errorf("unexpected User last name: %v != %v", res.Users[0].LastName, user.LastName)
+			}
+
+			if res.Users[0].Email != user.Email {
+				t.Errorf("unexpected User email: %v != %v", res.Users[0].Email, user.Email)
 			}
 		}
 	})
