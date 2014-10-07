@@ -31,8 +31,9 @@ func JSONAPIHandler(functions ...JSONAPIFunc) http.HandlerFunc {
 				body = utilJSON[utilInternalServerError]
 			}
 
-			// If body is empty, keep looping through chained functions until body is written
-			if body == nil {
+			// If body is empty, keep looping through chained functions until body is written,
+			// unless HTTP No Content is being sent
+			if body == nil && code != http.StatusNoContent {
 				continue
 			}
 
@@ -42,5 +43,12 @@ func JSONAPIHandler(functions ...JSONAPIFunc) http.HandlerFunc {
 			w.Write(body)
 			return
 		}
+
+		log.Println("no response written for functions:", functions)
+
+		// If no function terminated the chain, server error
+		w.Header().Set(httpContentType, jsonContentType)
+		w.WriteHeader(utilCode[utilInternalServerError])
+		w.Write(utilJSON[utilInternalServerError])
 	})
 }
