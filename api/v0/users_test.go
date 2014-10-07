@@ -2,6 +2,7 @@ package v0
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"reflect"
@@ -518,6 +519,104 @@ func TestPutUser(t *testing.T) {
 			// Verify user is the same as the mock we created earlier
 			if !reflect.DeepEqual(user, res.Users[0]) {
 				t.Errorf("unexpected user: %v != %v", user, res.Users[0])
+			}
+		}
+	})
+
+	// Check for errors from database setup/cleanup
+	if err != nil {
+		t.Fatalf("ditest.WithTemporaryDB:", err)
+	}
+}
+
+// TestDeleteUser verifies that DeleteUser returns the appropriate HTTP status
+// code, body, and any errors which occur.
+func TestDeleteUser(t *testing.T) {
+	// Invoke tests with temporary database
+	err := ditest.WithTemporaryDB(func(db *data.DB) {
+		// Build context
+		c := &context{
+			db: db,
+		}
+
+		// Generate and store mock user
+		user := ditest.MockUser()
+		if err := c.db.InsertUser(user); err != nil {
+			t.Error(err)
+			return
+		}
+
+		// Table of tests to iterate
+		var tests = []struct {
+			id         string
+			code       int
+			errMessage string
+		}{
+			// Empty ID
+			{"", http.StatusBadRequest, userMissingID},
+			// Bad ID
+			{"-1", http.StatusBadRequest, userInvalidID},
+			{"test", http.StatusBadRequest, userInvalidID},
+			// ID not found
+			{"2", http.StatusNotFound, userNotFound},
+			// Existing user
+			{"1", http.StatusNoContent, ""},
+		}
+
+		// Iterate and run tests
+		for _, test := range tests {
+			// Generate HTTP request
+			r, err := http.NewRequest("DELETE", "/", nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Set path variables, unless ID is missing
+			vars := util.Vars{}
+			if test.id != "" {
+				vars["id"] = test.id
+			}
+
+			// Invoke DeleteUser with HTTP request, manually injecting
+			// path variables from test
+			code, body, err := c.DeleteUser(r, vars)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Ensure proper HTTP status code
+			if code != test.code {
+				t.Errorf("unexpected code: %v != %v", code, test.code)
+				return
+			}
+
+			// If code is HTTP No Content, ensure user was deleted
+			if code == http.StatusNoContent {
+				if _, err := c.db.SelectUserByID(user.ID); err != sql.ErrNoRows {
+					t.Errorf("called DeleteUser, but user still exists: %v", user)
+					return
+				}
+
+				continue
+			}
+
+			// Unmarshal error JSON into struct
+			var errRes util.ErrorResponse
+			if err := json.Unmarshal(body, &errRes); err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Verify error code and message
+			if errRes.Error.Code != test.code {
+				t.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
+				return
+			}
+			if errRes.Error.Message != test.errMessage {
+				t.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
+				return
 			}
 		}
 	})
