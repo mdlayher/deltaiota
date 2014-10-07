@@ -202,6 +202,40 @@ func (c *context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 	return http.StatusOK, body, err
 }
 
+// DeleteUser is a util.JSONAPIFunc which deletes a User and returns HTTP 204
+// on success, or a non-200 HTTP status code and an error response on failure.
+func (c *context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, error) {
+	// Fetch input user ID
+	strID, ok := vars["id"]
+	if !ok {
+		return usersCode[userMissingID], usersJSON[userMissingID], nil
+	}
+
+	// Convert string to integer
+	id, err := strconv.ParseUint(strID, 10, 64)
+	if err != nil {
+		return usersCode[userInvalidID], usersJSON[userInvalidID], nil
+	}
+
+	// Select single user by ID from the database
+	user, err := c.db.SelectUserByID(id)
+	if err != nil {
+		// If no results found, return HTTP not found
+		if err == sql.ErrNoRows {
+			return usersCode[userNotFound], usersJSON[userNotFound], nil
+		}
+
+		return http.StatusInternalServerError, nil, err
+	}
+
+	// Delete user
+	if err := c.db.DeleteUser(user); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return http.StatusNoContent, nil, nil
+}
+
 // jsonToUser reads the JSON body of an incoming HTTP request, validates that
 // all required fields are set, and returns a User on success.
 // On failure, it will return a message body or an error, causing the caller to
