@@ -39,6 +39,11 @@ const (
 			, "password" = ?
 		WHERE id = ?;
 	`
+
+	// sqlDeleteUser is the SQL statement used to delete an existing User
+	sqlDeleteUser = `
+		DELETE FROM users WHERE id = ?;
+	`
 )
 
 // SelectAllUsers returns a slice of all Users from the database.
@@ -78,6 +83,14 @@ func (db *DB) InsertUser(u *models.User) error {
 func (db *DB) UpdateUser(u *models.User) error {
 	return db.withTx(func(tx *Tx) error {
 		return tx.UpdateUser(u)
+	})
+}
+
+// DeleteUser starts a transaction, deletes the input User by its ID, and attempts
+// to commit the transaction.
+func (db *DB) DeleteUser(u *models.User) error {
+	return db.withTx(func(tx *Tx) error {
+		return tx.DeleteUser(u)
 	})
 }
 
@@ -125,6 +138,13 @@ func (tx *Tx) InsertUser(u *models.User) error {
 // current transaction.
 func (tx *Tx) UpdateUser(u *models.User) error {
 	_, err := tx.Tx.Exec(sqlUpdateUser, u.SQLWriteFields()...)
+	return err
+}
+
+// DeleteUser updates the input User by its ID, in the context of the
+// current transaction.
+func (tx *Tx) DeleteUser(u *models.User) error {
+	_, err := tx.Tx.Exec(sqlDeleteUser, u.ID)
 	return err
 }
 
