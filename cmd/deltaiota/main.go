@@ -43,6 +43,9 @@ var (
 	// host is the address to which the HTTP server is bound
 	host string
 
+	// noRoot disables creation of a root account on database creation
+	noRoot bool
+
 	// timeout is the duration the server will wait before forcibly closing
 	// ongoing HTTP connections
 	timeout time.Duration
@@ -52,6 +55,7 @@ func init() {
 	// Set up flags
 	flag.StringVar(&db, "db", "deltaiota.db", "DSN for database instance")
 	flag.StringVar(&host, "host", ":1898", "HTTP server host")
+	flag.BoolVar(&noRoot, "no-root", false, "disable creation of root account for new database")
 	flag.DurationVar(&timeout, "timeout", 5*time.Second, "HTTP graceful timeout duration")
 }
 
@@ -74,7 +78,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if !created {
+		if created {
+			log.Println("deltaiota: created sqlite3 database:", db)
+		} else {
 			log.Println("deltaiota: using sqlite3 database:", db)
 		}
 	}
@@ -85,10 +91,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Perform initial user setup for sqlite3
-	if driver == sqlite3 && created {
-		log.Println("deltaiota: created sqlite3 database:", db)
-
+	// Unless skipped, perform initial root user setup for sqlite3
+	if driver == sqlite3 && created && !noRoot {
 		// Generate root user
 		root := &models.User{
 			Username: "root",
@@ -96,13 +100,17 @@ func main() {
 
 		// Generate a random password
 		password := ditest.RandomString(12)
-		log.Printf("deltaiota: creating root user [password: %s]", password)
-		root.SetPassword(password)
+		log.Println("deltaiota: creating root user: root /", password)
+		if err := root.SetPassword(password); err != nil {
+			log.Fatal(err)
+		}
 
 		// Save root user
 		if err := didb.InsertUser(root); err != nil {
 			log.Fatal(err)
 		}
+	} else if noRoot {
+		log.Println("deltaiota: skipping creation of root user")
 	}
 
 	// Start HTTP server using deltaiota handler on specified host
