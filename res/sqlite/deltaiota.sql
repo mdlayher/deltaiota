@@ -1,6 +1,13 @@
 /* deltaiota sqlite schema */
 PRAGMA foreign_keys = OFF;
 BEGIN TRANSACTION;
+/* sessions */
+CREATE TABLE "sessions" (
+	"id"      INTEGER PRIMARY KEY AUTOINCREMENT,
+	"user_id" INTEGER NOT NULL,
+	"key"     TEXT NOT NULL,
+	"expire"  INTEGER NOT NULL
+);
 /* users */
 CREATE TABLE "users" (
 	"id"         INTEGER PRIMARY KEY AUTOINCREMENT,
