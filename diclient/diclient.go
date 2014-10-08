@@ -12,6 +12,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/mdlayher/deltaiota/api/util"
 )
 
 const (
@@ -30,7 +32,8 @@ type Client struct {
 
 	userAgent string
 
-	Users *UsersService
+	Sessions *SessionsService
+	Users    *UsersService
 }
 
 // NewClient creates a new Client for the HTTP API at the specified host.
@@ -57,6 +60,9 @@ func NewClient(host string, client *http.Client) (*Client, error) {
 	}
 
 	// Set up individual services within client
+	c.Sessions = &SessionsService{
+		client: c,
+	}
 	c.Users = &UsersService{
 		client: c,
 	}
@@ -121,6 +127,11 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 		Response: res,
 	}
 
+	// Check response for errors
+	if err := checkResponse(req.URL.Path, res); err != nil {
+		return wrapRes, err
+	}
+
 	// If no second parameter was passed, do not attempt to handle response
 	if v == nil {
 		return wrapRes, nil
@@ -137,4 +148,31 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	}
 
 	return wrapRes, err
+}
+
+// Error wraps util.Error, allowing clients to import only the client for error
+// checking purposes.
+type Error util.Error
+
+// Error returns the string representation of an Error.
+func (e Error) Error() string {
+	return fmt.Sprintf("%d: %s", e.Code, e.Message)
+}
+
+// checkResponse checks for a non-200 HTTP status code, and returns any errors
+// encountered.
+func checkResponse(path string, r *http.Response) error {
+	// Check for 200-range status code
+	if c := r.StatusCode; 200 <= c && c <= 299 {
+		return nil
+	}
+
+	// Unmarshal error response
+	errRes := new(util.ErrorResponse)
+	if err := json.NewDecoder(r.Body).Decode(errRes); err != nil {
+		return err
+	}
+
+	// Wrap in client Error type
+	return Error(*errRes.Error)
 }
