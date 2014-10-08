@@ -1,10 +1,17 @@
 package models
 
 import (
+	"errors"
 	"net/mail"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
+)
+
+var (
+	// ErrInvalidPassword is returned when password authentication fails for a
+	// specified User.
+	ErrInvalidPassword = errors.New("invalid password")
 )
 
 // User represents a user of the application.
@@ -52,6 +59,23 @@ func (u *User) SetPassword(password string) error {
 	u.password = string(hash)
 
 	return nil
+}
+
+// TryPassword attempts to verify the input password against the receiving User's
+// current password.
+func (u *User) TryPassword(password string) error {
+	// Attempt to hash password
+	err := bcrypt.CompareHashAndPassword([]byte(u.password), []byte(password))
+
+	// Check for bcrypt-specific password failure, return more generic failure
+	// (other packages should not have to import or know about bcrypt to know
+	// the password was incorrect)
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return ErrInvalidPassword
+	}
+
+	// Return other errors, or no error
+	return err
 }
 
 // SetTestPassword directly stores the input password in the receiving
