@@ -108,7 +108,7 @@ func makeAuthHandler(fn AuthenticateFunc, h http.HandlerFunc) http.HandlerFunc {
 
 		// Authentication succeeded, store user and session for later use
 		context.Set(r, ctxUser, user)
-		context.Set(r, ctxUser, session)
+		context.Set(r, ctxSession, session)
 
 		// Invoke input handler
 		h.ServeHTTP(w, r)
