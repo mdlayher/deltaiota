@@ -2,6 +2,7 @@ package models
 
 import (
 	"net/mail"
+	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
 )
@@ -26,6 +27,11 @@ func (u *User) CopyFrom(user *User) {
 	u.Email = user.Email
 	u.Phone = user.Phone
 	u.password = user.password
+}
+
+// NewSession generates a new Session for this user.
+func (u *User) NewSession(expire time.Time) (*Session, error) {
+	return NewSession(u.ID, u.password, expire)
 }
 
 // SetPassword hashes the input password using bcrypt, storing the password
