@@ -18,11 +18,13 @@ const (
 // JSON util, human-readable client error responses.
 const (
 	utilInternalServerError = "internal server error"
+	utilNotAuthorized       = "not authorized"
 )
 
 // JSON util, map of client errors to response codes.
 var utilCode = map[string]int{
 	utilInternalServerError: http.StatusInternalServerError,
+	utilNotAuthorized:       http.StatusUnauthorized,
 }
 
 // Generated JSON responses for various client-facing errors.
