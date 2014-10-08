@@ -285,6 +285,8 @@ func TestPostUser(t *testing.T) {
 			{http.StatusBadRequest, userJSONSyntax, nil},
 			// Bad JSON
 			{http.StatusBadRequest, userJSONSyntax, []byte(`{`)},
+			// No password key
+			{http.StatusBadRequest, "empty field: password", []byte(`{}`)},
 			// Missing password
 			{http.StatusBadRequest, "empty field: password", []byte(`{"password":""}`)},
 			// Missing username
@@ -431,6 +433,8 @@ func TestPutUser(t *testing.T) {
 			{"1", http.StatusBadRequest, userJSONSyntax, nil},
 			// Bad JSON
 			{"1", http.StatusBadRequest, userJSONSyntax, []byte(`{`)},
+			// No password key
+			{"1", http.StatusBadRequest, "empty field: password", []byte(`{}`)},
 			// Missing password
 			{"1", http.StatusBadRequest, "empty field: password", []byte(`{"password":""}`)},
 			// Missing username
