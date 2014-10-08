@@ -16,6 +16,8 @@ import (
 	"github.com/mdlayher/deltaiota/api"
 	"github.com/mdlayher/deltaiota/bindata"
 	"github.com/mdlayher/deltaiota/data"
+	"github.com/mdlayher/deltaiota/data/models"
+	"github.com/mdlayher/deltaiota/ditest"
 
 	"github.com/stretchr/graceful"
 )
@@ -60,10 +62,20 @@ func main() {
 	// Report information on startup
 	log.Println(fmt.Sprintf("deltaiota: starting [pid: %d] [version: %s]", os.Getpid(), version))
 
+	// Determine if database newly created
+	var created bool
+	var err error
+
 	// If database is sqlite3, perform initial setup
 	if driver == sqlite3 {
-		if err := sqlite3Setup(db); err != nil {
+		// Attempt setup, check if already created
+		created, err = sqlite3Setup(db)
+		if err != nil {
 			log.Fatal(err)
+		}
+
+		if !created {
+			log.Println("deltaiota: using sqlite3 database:", db)
 		}
 	}
 
@@ -71,6 +83,26 @@ func main() {
 	didb := &data.DB{}
 	if err := didb.Open(driver, db); err != nil {
 		log.Fatal(err)
+	}
+
+	// Perform initial user setup for sqlite3
+	if driver == sqlite3 && created {
+		log.Println("deltaiota: created sqlite3 database:", db)
+
+		// Generate root user
+		root := &models.User{
+			Username: "root",
+		}
+
+		// Generate a random password
+		password := ditest.RandomString(12)
+		log.Printf("deltaiota: creating root user [password: %s]", password)
+		root.SetPassword(password)
+
+		// Save root user
+		if err := didb.InsertUser(root); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// Start HTTP server using deltaiota handler on specified host
@@ -95,29 +127,29 @@ func main() {
 	log.Println("deltaiota: graceful shutdown complete")
 }
 
-// sqlite3Setup performs setup routines specific to a sqlite3 database
-func sqlite3Setup(dsn string) error {
+// sqlite3Setup performs setup routines specific to a sqlite3 database.
+// On success, it returns a boolean indicating if the database was created.
+// On failure, it returns an error.
+func sqlite3Setup(dsn string) (bool, error) {
 	// Check if database already exists at specified location
 	dbPath := path.Clean(dsn)
 	_, err := os.Stat(dbPath)
 	if err == nil {
 		// Database exists, skip setup
-		log.Println("deltaiota: using sqlite3 database:", dbPath)
-		return nil
+		return false, nil
 	}
 
 	// Any other errors, return now
 	if !os.IsNotExist(err) {
-		return err
+		return false, err
 	}
 
 	// Retrieve sqlite database asset
 	asset, err := bindata.Asset(sqlite3DBAsset)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Write asset directly to new file
-	log.Println("deltaiota: creating sqlite3 database:", dbPath)
-	return ioutil.WriteFile(dbPath, asset, 0664)
+	return true, ioutil.WriteFile(dbPath, asset, 0664)
 }
