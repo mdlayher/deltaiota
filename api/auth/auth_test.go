@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data/models"
+	"github.com/mdlayher/deltaiota/ditest"
 )
 
 // Test_makeAuthHandler ensures that makeAuthHandler generates the appropriate
@@ -20,6 +22,11 @@ func Test_makeAuthHandler(t *testing.T) {
 		return nil, nil, &Error{
 			Reason: "foo bar",
 		}, nil
+	}
+
+	// Test function which returns a non-standard client error
+	clientBadErrFn := func(r *http.Request) (*models.User, *models.Session, error, error) {
+		return nil, nil, errors.New("some error"), nil
 	}
 
 	// Test function which returns a server error
@@ -39,6 +46,25 @@ func Test_makeAuthHandler(t *testing.T) {
 		w.Write([]byte("hello world"))
 	}
 
+	// Test function which stores some request context
+	user := ditest.MockUser()
+	session, err := user.NewSession(time.Now().Add(1 * time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contextFn := func(r *http.Request) (*models.User, *models.Session, error, error) {
+		return user, session, nil, nil
+	}
+
+	// Test handler which retrieves data from request context
+	contextHandlerFn := func(w http.ResponseWriter, r *http.Request) {
+		cUser := User(r)
+		cSession := Session(r)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(cUser.Username + cSession.Key))
+	}
+
 	// Build JSON response for client errors
 	authFailJSON := func(reason string) []byte {
 		return []byte(`{"error":{"code":401,"message":"authentication failed: ` + reason + `"}}`)
@@ -53,10 +79,14 @@ func Test_makeAuthHandler(t *testing.T) {
 	}{
 		// Client error
 		{clientErrFn, handlerFn, http.StatusUnauthorized, authFailJSON("foo bar"), nil},
+		// Non-standard client error
+		{clientBadErrFn, handlerFn, http.StatusUnauthorized, util.JSON[util.NotAuthorized], nil},
 		// Server error
 		{serverErrFn, handlerFn, http.StatusInternalServerError, util.JSON[util.InternalServerError], errServer},
 		// No error
 		{okFn, handlerFn, http.StatusOK, []byte("hello world"), nil},
+		// No error, with context
+		{contextFn, contextHandlerFn, http.StatusOK, []byte(user.Username + session.Key), nil},
 	}
 
 	for _, test := range tests {
