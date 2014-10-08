@@ -27,7 +27,15 @@ func NewServeMux(db *data.DB) http.Handler {
 		db: db,
 	}
 
+	// Set up authentication context
+	auth := &util.AuthContext{
+		DB: db,
+	}
+
 	// Set up HTTP routes
+
+	// Sessions API
+	r.Handle("/sessions", auth.BasicAuthHandler(util.JSONAPIHandler(c.PostSession))).Methods("POST")
 
 	// Users API
 	r.Handle("/users", util.JSONAPIHandler(c.ListUsers)).Methods("GET")
