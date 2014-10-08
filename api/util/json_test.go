@@ -51,9 +51,15 @@ func TestJSONAPIHandler(t *testing.T) {
 		buffer := bytes.NewBuffer(nil)
 		log.SetOutput(buffer)
 
+		// Create mock HTTP request
+		r, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		// Capture output, invoke function as http.HandlerFunc
 		w := httptest.NewRecorder()
-		JSONAPIHandler(test.fn).ServeHTTP(w, nil)
+		JSONAPIHandler(test.fn).ServeHTTP(w, r)
 
 		// If body not empty, ensure JSON response header set
 		if len(test.body) > 0 {
