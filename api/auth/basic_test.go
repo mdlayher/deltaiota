@@ -9,7 +9,7 @@ func Test_basicCredentials(t *testing.T) {
 		input    string
 		username string
 		password string
-		err      *AuthError
+		err      *Error
 	}{
 		// Empty input
 		{"", "", "", errNoAuthorizationHeader},

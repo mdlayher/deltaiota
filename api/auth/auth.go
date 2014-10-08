@@ -26,25 +26,25 @@ const (
 // or server error is returned.
 type AuthenticateFunc func(r *http.Request) (*models.User, *models.Session, error, error)
 
-// AuthContext provides all shared members required for user authentication.
-type AuthContext struct {
+// Context provides all shared members required for user authentication.
+type Context struct {
 	db *data.DB
 }
 
-// NewContext initializes a new AuthContext with the input parameters.
-func NewContext(db *data.DB) *AuthContext {
-	return &AuthContext{
+// NewContext initializes a new Context with the input parameters.
+func NewContext(db *data.DB) *Context {
+	return &Context{
 		db: db,
 	}
 }
 
-// AuthError is an error returned on client authentication failure.
-type AuthError struct {
+// Error is an error returned on client authentication failure.
+type Error struct {
 	Reason string
 }
 
-// Error returns the string representation of an AuthError.
-func (e *AuthError) Error() string {
+// Error returns the string representation of an Error.
+func (e *Error) Error() string {
 	return fmt.Sprintf("authentication failed: %s", e.Reason)
 }
 
@@ -84,7 +84,7 @@ func makeAuthHandler(fn AuthenticateFunc, h http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(code)
 
 			// If not a specific authentication error, return generic error
-			authErr, ok := cErr.(*AuthError)
+			authErr, ok := cErr.(*Error)
 			if !ok {
 				w.Write(util.JSON[util.NotAuthorized])
 				return

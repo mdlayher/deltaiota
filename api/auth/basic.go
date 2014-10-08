@@ -12,44 +12,44 @@ import (
 var (
 	// errNoAuthorizationHeader is returned when an input Authorization header
 	// is blank.
-	errNoAuthorizationHeader = &AuthError{
+	errNoAuthorizationHeader = &Error{
 		Reason: "no HTTP Authorization header",
 	}
 
 	// errNoAuthorizationType is returned when an input Authorization header
 	// contains no type.
-	errNoAuthorizationType = &AuthError{
+	errNoAuthorizationType = &Error{
 		Reason: "no HTTP Authorization type",
 	}
 
 	// errNotBasicAuthorization is returned when an input Authorization header
 	// is not the HTTP Basic type.
-	errNotBasicAuthorization = &AuthError{
+	errNotBasicAuthorization = &Error{
 		Reason: "not HTTP Basic Authorization type",
 	}
 
 	// errInvalidBase64Authorization is returned when an input Authorization header
 	// does not contain valid base64-encoded data.
-	errInvalidBase64Authorization = &AuthError{
+	errInvalidBase64Authorization = &Error{
 		Reason: "invalid base64 HTTP Basic Authorization header",
 	}
 
 	// errInvalidBasicCredentialPair is returned when an input Authorization header
 	// does not contain a valid credential pair.
-	errInvalidBasicCredentialPair = &AuthError{
+	errInvalidBasicCredentialPair = &Error{
 		Reason: "invalid credential pair in HTTP Basic Authorization header",
 	}
 )
 
 // BasicAuthHandler is a http.HandlerFunc which performs HTTP Basic authentication.
-func (a *AuthContext) BasicAuthHandler(h http.HandlerFunc) http.HandlerFunc {
+func (a *Context) BasicAuthHandler(h http.HandlerFunc) http.HandlerFunc {
 	return makeAuthHandler(a.basicAuthenticate, h)
 }
 
 // basicAuthenticate is a AuthenticateFunc which authenticates a user via HTTP Basic.
 // On success, a user is returned (nil session is returned).  On failure, either a
 // client or server error is returned.
-func (a *AuthContext) basicAuthenticate(r *http.Request) (*models.User, *models.Session, error, error) {
+func (a *Context) basicAuthenticate(r *http.Request) (*models.User, *models.Session, error, error) {
 	// Attempt to fetch username/password pair from Authorization header
 	username, password, err := basicCredentials(r.Header.Get("Authorization"))
 	if err != nil {
@@ -59,12 +59,12 @@ func (a *AuthContext) basicAuthenticate(r *http.Request) (*models.User, *models.
 
 	// Check for blank credentials
 	if username == "" {
-		return nil, nil, &AuthError{
+		return nil, nil, &Error{
 			Reason: "no username provided",
 		}, nil
 	}
 	if password == "" {
-		return nil, nil, &AuthError{
+		return nil, nil, &Error{
 			Reason: "no password provided",
 		}, nil
 	}
@@ -74,7 +74,7 @@ func (a *AuthContext) basicAuthenticate(r *http.Request) (*models.User, *models.
 	if err != nil {
 		// Check for unknown user
 		if err == sql.ErrNoRows {
-			return nil, nil, &AuthError{
+			return nil, nil, &Error{
 				Reason: "invalid username",
 			}, nil
 		}
@@ -86,7 +86,7 @@ func (a *AuthContext) basicAuthenticate(r *http.Request) (*models.User, *models.
 	if err := user.TryPassword(password); err != nil {
 		// Check for invalid password
 		if err == models.ErrInvalidPassword {
-			return nil, nil, &AuthError{
+			return nil, nil, &Error{
 				Reason: err.Error(),
 			}, nil
 		}

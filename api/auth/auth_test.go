@@ -17,7 +17,7 @@ import (
 func Test_makeAuthHandler(t *testing.T) {
 	// Test function which returns a formatted client error
 	clientErrFn := func(r *http.Request) (*models.User, *models.Session, error, error) {
-		return nil, nil, &AuthError{
+		return nil, nil, &Error{
 			Reason: "foo bar",
 		}, nil
 	}
