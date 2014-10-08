@@ -70,13 +70,13 @@ func TestJSONAPIHandler(t *testing.T) {
 
 		// Verify expected code
 		if w.Code != test.code {
-			t.Fatal("unexpected code: %v != %v", w.Code, test.code)
+			t.Fatalf("unexpected code: %v != %v", w.Code, test.code)
 		}
 
 		// If no error, verify expected body
 		if test.err == nil {
 			if !bytes.Equal(w.Body.Bytes(), test.body) {
-				t.Fatal("unexpected body: %v != %v", w.Body.Bytes(), test.body)
+				t.Fatalf("unexpected body: %v != %v", w.Body.Bytes(), test.body)
 			}
 
 			continue
@@ -90,10 +90,10 @@ func TestJSONAPIHandler(t *testing.T) {
 
 		// Verify error fields
 		if errRes.Error.Code != test.code {
-			t.Fatal("unexpected error code: %v != %v", errRes.Error.Code, test.code)
+			t.Fatalf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
 		}
 		if errRes.Error.Message != InternalServerError {
-			t.Fatal("unexpected error message: %v != %v", errRes.Error.Message, InternalServerError)
+			t.Fatalf("unexpected error message: %v != %v", errRes.Error.Message, InternalServerError)
 		}
 
 		// Verify error was logged

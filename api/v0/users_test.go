@@ -53,7 +53,7 @@ func TestListUsersNoUsers(t *testing.T) {
 
 	// Check for errors from database setup/cleanup
 	if err != nil {
-		t.Fatalf("ditest.WithTemporaryDB:", err)
+		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
 }
 
@@ -127,7 +127,7 @@ func TestListUsersManyUsers(t *testing.T) {
 
 	// Check for errors from database setup/cleanup
 	if err != nil {
-		t.Fatalf("ditest.WithTemporaryDB:", err)
+		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
 }
 
@@ -251,7 +251,7 @@ func TestGetUser(t *testing.T) {
 
 	// Check for errors from database setup/cleanup
 	if err != nil {
-		t.Fatalf("ditest.WithTemporaryDB:", err)
+		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
 }
 
@@ -372,7 +372,7 @@ func TestPostUser(t *testing.T) {
 
 	// Check for errors from database setup/cleanup
 	if err != nil {
-		t.Fatalf("ditest.WithTemporaryDB:", err)
+		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
 }
 
@@ -525,7 +525,7 @@ func TestPutUser(t *testing.T) {
 
 	// Check for errors from database setup/cleanup
 	if err != nil {
-		t.Fatalf("ditest.WithTemporaryDB:", err)
+		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
 }
 
@@ -623,6 +623,6 @@ func TestDeleteUser(t *testing.T) {
 
 	// Check for errors from database setup/cleanup
 	if err != nil {
-		t.Fatalf("ditest.WithTemporaryDB:", err)
+		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
 }
