@@ -8,6 +8,7 @@ CREATE TABLE "sessions" (
 	"key"     TEXT NOT NULL,
 	"expire"  INTEGER NOT NULL
 );
+CREATE UNIQUE INDEX "sessions_unique_key" ON "sessions" ("key");
 /* users */
 CREATE TABLE "users" (
 	"id"         INTEGER PRIMARY KEY AUTOINCREMENT,
