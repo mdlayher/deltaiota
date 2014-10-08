@@ -32,17 +32,24 @@ func TestJSONAPIHandler(t *testing.T) {
 
 	// Table of test JSONAPIFunc and expected results
 	var tests = []struct {
-		fn   JSONAPIFunc
-		code int
-		body []byte
-		err  error
+		fn     JSONAPIFunc
+		method string
+		code   int
+		body   []byte
+		err    error
 	}{
-		// Empty function
-		{emptyFn, http.StatusOK, nil, nil},
-		// Body function
-		{bodyFn, http.StatusOK, expBody, nil},
-		// Error function
-		{errFn, http.StatusInternalServerError, nil, expErr},
+		// GET - Empty function
+		{emptyFn, "GET", http.StatusOK, nil, nil},
+		// GET - Body function
+		{bodyFn, "GET", http.StatusOK, expBody, nil},
+		// GET - Error function
+		{errFn, "GET", http.StatusInternalServerError, nil, expErr},
+		// HEAD - Empty function
+		{emptyFn, "HEAD", http.StatusOK, nil, nil},
+		// HEAD - Body function
+		{bodyFn, "HEAD", http.StatusOK, nil, nil},
+		// HEAD - Error function
+		{errFn, "HEAD", http.StatusInternalServerError, nil, expErr},
 	}
 
 	// Iterate and run all tests
@@ -52,7 +59,7 @@ func TestJSONAPIHandler(t *testing.T) {
 		log.SetOutput(buffer)
 
 		// Create mock HTTP request
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest(test.method, "/", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -79,6 +86,11 @@ func TestJSONAPIHandler(t *testing.T) {
 				t.Fatalf("unexpected body: %v != %v", w.Body.Bytes(), test.body)
 			}
 
+			continue
+		}
+
+		// If HEAD, there will be no body
+		if test.method == "HEAD" {
 			continue
 		}
 

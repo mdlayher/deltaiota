@@ -35,6 +35,7 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 		// If HTTP HEAD request, write no body
 		if r.Method == "HEAD" {
 			w.Write(nil)
+			return
 		}
 
 		w.Write(body)
