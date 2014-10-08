@@ -16,6 +16,11 @@ const (
 		SELECT * FROM users WHERE id = ?;
 	`
 
+	// sqlSelectUserByUsername is the SQL statement used to select a single user by username
+	sqlSelectUserByUsername = `
+		SELECT * FROM users WHERE username = ?;
+	`
+
 	// sqlInsertUser is the SQL statement used to insert a new User
 	sqlInsertUser = `
 		INSERT INTO users (
@@ -53,21 +58,12 @@ func (db *DB) SelectAllUsers() ([]*models.User, error) {
 
 // SelectUserByID returns a single User by ID from the database.
 func (db *DB) SelectUserByID(id uint64) (*models.User, error) {
-	// Fetch users with matching ID
-	users, err := db.selectUsers(sqlSelectUserByID, id)
-	if err != nil {
-		return nil, err
-	}
+	return db.selectSingleUser(sqlSelectUserByID, id)
+}
 
-	// Verify only 0 or 1 user returned
-	if len(users) == 0 {
-		return nil, sql.ErrNoRows
-	} else if len(users) == 1 {
-		return users[0], nil
-	}
-
-	// More than one result returned
-	return nil, ErrMultipleResults
+// SelectUserByUsername returns a single User by Username from the database.
+func (db *DB) SelectUserByUsername(username string) (*models.User, error) {
+	return db.selectSingleUser(sqlSelectUserByUsername, username)
 }
 
 // InsertUser starts a transaction, inserts a new User, and attempts to commit
@@ -113,6 +109,26 @@ func (db *DB) selectUsers(query string, args ...interface{}) ([]*models.User, er
 
 	// Return any matching users and error
 	return users, err
+}
+
+// selectSingleUser returns a User from the database, based upon an input
+// SQL query and arguments
+func (db *DB) selectSingleUser(query string, args ...interface{}) (*models.User, error) {
+	// Fetch users with matching condition
+	users, err := db.selectUsers(query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify only 0 or 1 user returned
+	if len(users) == 0 {
+		return nil, sql.ErrNoRows
+	} else if len(users) == 1 {
+		return users[0], nil
+	}
+
+	// More than one result returned
+	return nil, ErrMultipleResults
 }
 
 // InsertUser inserts a new User in the context of the current transaction.
