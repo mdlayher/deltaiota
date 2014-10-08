@@ -5,6 +5,14 @@ package util
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/gorilla/context"
+	"github.com/mdlayher/deltaiota/data/models"
+)
+
+const (
+	// ctxUser is the named key used to fetch a user from gorilla/context.
+	ctxUser = "user"
 )
 
 const (
@@ -66,4 +74,11 @@ func ErrRes(code int, message string) *ErrorResponse {
 			Message: message,
 		},
 	}
+}
+
+// SessionUser returns the gorilla/context user for the input http.Request.
+// This function will panic if the user is not properly authenticated, and
+// should only be used in handlers which are always authenticated.
+func SessionUser(r *http.Request) *models.User {
+	return context.Get(r, ctxUser).(*models.User)
 }
