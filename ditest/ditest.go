@@ -60,20 +60,20 @@ func WithTemporaryDB(fn func(db *data.DB)) error {
 func MockUser() *models.User {
 	// Generate user
 	user := &models.User{
-		Username:  randomString(10),
-		FirstName: randomString(10),
-		LastName:  randomString(10),
-		Email:     fmt.Sprintf("%s@%s.com", randomString(6), randomString(6)),
+		Username:  RandomString(10),
+		FirstName: RandomString(10),
+		LastName:  RandomString(10),
+		Email:     fmt.Sprintf("%s@%s.com", RandomString(6), RandomString(6)),
 	}
 
 	// Generate test password, only used for duration of test
-	user.SetTestPassword(randomString(10))
+	user.SetTestPassword(RandomString(10))
 	return user
 }
 
-// randomString generates a random string of length n.
+// RandomString generates a random string of length n.
 // Adapter from: http://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-golang
-func randomString(n int) string {
+func RandomString(n int) string {
 	// Seed random number generator
 	rand.Seed(time.Now().UnixNano())
 
