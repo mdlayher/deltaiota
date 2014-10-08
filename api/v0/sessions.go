@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mdlayher/deltaiota/api/auth"
 	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data/models"
 )
@@ -19,7 +20,7 @@ type SessionsResponse struct {
 // error response on failure.
 func (c *Context) PostSession(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Retrieve authenticated user
-	user := util.SessionUser(r)
+	user := auth.User(r)
 
 	// Generate a new session for the user
 	session, err := user.NewSession(time.Now().Add(7 * 24 * time.Hour))
@@ -37,4 +38,18 @@ func (c *Context) PostSession(r *http.Request, vars util.Vars) (int, []byte, err
 		Session: session,
 	})
 	return http.StatusOK, body, err
+}
+
+// DeleteSession is a util.JSONAPIFunc which deletes an existing Session and returns
+// HTTP 204 on success, or a non-200 HTTP status code and an error response on failure.
+func (c *Context) DeleteSession(r *http.Request, vars util.Vars) (int, []byte, error) {
+	// Retrieve authenticated session
+	session := auth.Session(r)
+
+	// Delete session now
+	if err := c.db.DeleteSession(session); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
+	return http.StatusNoContent, nil, nil
 }

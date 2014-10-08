@@ -24,8 +24,8 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 		code, body, err := fn(r, mux.Vars(r))
 		if err != nil {
 			log.Println(err)
-			code = utilCode[utilInternalServerError]
-			body = utilJSON[utilInternalServerError]
+			code = Code[InternalServerError]
+			body = JSON[InternalServerError]
 		}
 
 		// Write HTTP status code

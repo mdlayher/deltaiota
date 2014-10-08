@@ -92,8 +92,8 @@ func TestJSONAPIHandler(t *testing.T) {
 		if errRes.Error.Code != test.code {
 			t.Fatal("unexpected error code: %v != %v", errRes.Error.Code, test.code)
 		}
-		if errRes.Error.Message != utilInternalServerError {
-			t.Fatal("unexpected error message: %v != %v", errRes.Error.Message, utilInternalServerError)
+		if errRes.Error.Message != InternalServerError {
+			t.Fatal("unexpected error message: %v != %v", errRes.Error.Message, InternalServerError)
 		}
 
 		// Verify error was logged

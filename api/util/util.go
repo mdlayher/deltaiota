@@ -5,14 +5,6 @@ package util
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/context"
-	"github.com/mdlayher/deltaiota/data/models"
-)
-
-const (
-	// ctxUser is the named key used to fetch a user from gorilla/context.
-	ctxUser = "user"
 )
 
 const (
@@ -25,23 +17,23 @@ const (
 
 // JSON util, human-readable client error responses.
 const (
-	utilInternalServerError = "internal server error"
-	utilNotAuthorized       = "not authorized"
+	InternalServerError = "internal server error"
+	NotAuthorized       = "not authorized"
 )
 
 // JSON util, map of client errors to response codes.
-var utilCode = map[string]int{
-	utilInternalServerError: http.StatusInternalServerError,
-	utilNotAuthorized:       http.StatusUnauthorized,
+var Code = map[string]int{
+	InternalServerError: http.StatusInternalServerError,
+	NotAuthorized:       http.StatusUnauthorized,
 }
 
 // Generated JSON responses for various client-facing errors.
-var utilJSON = map[string][]byte{}
+var JSON = map[string][]byte{}
 
 // init initializes the stored JSON responses for client-facing errors.
 func init() {
 	// Iterate all error strings and code integers
-	for k, v := range utilCode {
+	for k, v := range Code {
 		// Generate error response with appropriate string and code
 		body, err := json.Marshal(ErrRes(v, k))
 		if err != nil {
@@ -49,7 +41,7 @@ func init() {
 		}
 
 		// Store for later use
-		utilJSON[k] = body
+		JSON[k] = body
 	}
 }
 
@@ -74,11 +66,4 @@ func ErrRes(code int, message string) *ErrorResponse {
 			Message: message,
 		},
 	}
-}
-
-// SessionUser returns the gorilla/context user for the input http.Request.
-// This function will panic if the user is not properly authenticated, and
-// should only be used in handlers which are always authenticated.
-func SessionUser(r *http.Request) *models.User {
-	return context.Get(r, ctxUser).(*models.User)
 }

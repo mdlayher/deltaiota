@@ -5,6 +5,7 @@ package v0
 import (
 	"net/http"
 
+	"github.com/mdlayher/deltaiota/api/auth"
 	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data"
 
@@ -28,14 +29,12 @@ func NewServeMux(db *data.DB) http.Handler {
 	}
 
 	// Set up authentication context
-	auth := &util.AuthContext{
-		DB: db,
-	}
+	ac := auth.NewContext(db)
 
 	// Set up HTTP routes
 
 	// Sessions API
-	r.Handle("/sessions", auth.BasicAuthHandler(util.JSONAPIHandler(c.PostSession))).Methods("POST")
+	r.Handle("/sessions", ac.BasicAuthHandler(util.JSONAPIHandler(c.PostSession))).Methods("POST")
 
 	// Users API
 	r.Handle("/users", util.JSONAPIHandler(c.ListUsers)).Methods("GET")
