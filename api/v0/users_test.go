@@ -20,7 +20,7 @@ func TestListUsersNoUsers(t *testing.T) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
-		c := &context{
+		c := &Context{
 			db: db,
 		}
 
@@ -63,7 +63,7 @@ func TestListUsersManyUsers(t *testing.T) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
-		c := &context{
+		c := &Context{
 			db: db,
 		}
 
@@ -137,7 +137,7 @@ func TestGetUser(t *testing.T) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
-		c := &context{
+		c := &Context{
 			db: db,
 		}
 
@@ -261,7 +261,7 @@ func TestPostUser(t *testing.T) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
-		c := &context{
+		c := &Context{
 			db: db,
 		}
 
@@ -382,7 +382,7 @@ func TestPutUser(t *testing.T) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
-		c := &context{
+		c := &Context{
 			db: db,
 		}
 
@@ -535,7 +535,7 @@ func TestDeleteUser(t *testing.T) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
-		c := &context{
+		c := &Context{
 			db: db,
 		}
 

@@ -64,7 +64,7 @@ type UsersResponse struct {
 
 // ListUsers is a util.JSONAPIFunc which returns HTTP 200 and a JSON list of users
 // on success, or a non-200 HTTP status code and an error response on failure.
-func (c *context) ListUsers(r *http.Request, vars util.Vars) (int, []byte, error) {
+func (c *Context) ListUsers(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Fetch a list of all users from the database
 	users, err := c.db.SelectAllUsers()
 	if err != nil {
@@ -80,7 +80,7 @@ func (c *context) ListUsers(r *http.Request, vars util.Vars) (int, []byte, error
 
 // GetUser is a util.JSONAPIFunc which returns HTTP 200 and a JSON user object
 // on success, or a non-200 HTTP status code and an error response on failure.
-func (c *context) GetUser(r *http.Request, vars util.Vars) (int, []byte, error) {
+func (c *Context) GetUser(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Fetch input user ID
 	strID, ok := vars["id"]
 	if !ok {
@@ -114,7 +114,7 @@ func (c *context) GetUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 // PostUser is a util.JSONAPIFunc which creates a User and returns HTTP 201
 // and a JSON user object on success, or a non-200 HTTP status code and an
 // error response on failure.
-func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error) {
+func (c *Context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Read and validate request input into a User struct
 	user, code, body, err := c.jsonToUser(r)
 	if err != nil {
@@ -146,7 +146,7 @@ func (c *context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 // PutUser is a util.JSONAPIFunc which updates a User and returns HTTP 200
 // and a JSON user object on success, or a non-200 HTTP status code and an
 // error response on failure.
-func (c *context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) {
+func (c *Context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Fetch input user ID
 	strID, ok := vars["id"]
 	if !ok {
@@ -204,7 +204,7 @@ func (c *context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 
 // DeleteUser is a util.JSONAPIFunc which deletes a User and returns HTTP 204
 // on success, or a non-200 HTTP status code and an error response on failure.
-func (c *context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, error) {
+func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Fetch input user ID
 	strID, ok := vars["id"]
 	if !ok {
@@ -240,7 +240,7 @@ func (c *context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 // all required fields are set, and returns a User on success.
 // On failure, it will return a message body or an error, causing the caller to
 // immediately send the result.
-func (c *context) jsonToUser(r *http.Request) (*models.User, int, []byte, error) {
+func (c *Context) jsonToUser(r *http.Request) (*models.User, int, []byte, error) {
 	// Read entire request body
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

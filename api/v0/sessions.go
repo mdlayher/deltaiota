@@ -17,7 +17,7 @@ type SessionsResponse struct {
 // PostSession is a util.JSONAPIFunc which creates a new Session and returns HTTP 200
 // and a JSON session object on success, or a non-200 HTTP status code and an
 // error response on failure.
-func (c *context) PostSession(r *http.Request, vars util.Vars) (int, []byte, error) {
+func (c *Context) PostSession(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Retrieve authenticated user
 	user := util.SessionUser(r)
 

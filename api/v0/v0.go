@@ -23,7 +23,7 @@ func NewServeMux(db *data.DB) http.Handler {
 	r := mux.NewRouter().StrictSlash(true).PathPrefix(APIPrefix).Subrouter()
 
 	// Create a context which stores any shared members
-	c := &context{
+	c := &Context{
 		db: db,
 	}
 
@@ -47,7 +47,7 @@ func NewServeMux(db *data.DB) http.Handler {
 	return r
 }
 
-// context stores shared members for API v0 HTTP handlers.
-type context struct {
+// Context stores shared members for API v0 HTTP handlers.
+type Context struct {
 	db *data.DB
 }
