@@ -52,7 +52,7 @@ func (u *User) SetPassword(password string) error {
 	}
 
 	// Generate password hash using bcrypt
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), 13)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
