@@ -59,14 +59,10 @@ func (a *Context) basicAuthenticate(r *http.Request) (*models.User, *models.Sess
 
 	// Check for blank credentials
 	if username == "" {
-		return nil, nil, &Error{
-			Reason: "no username provided",
-		}, nil
+		return nil, nil, errNoUsername, nil
 	}
 	if password == "" {
-		return nil, nil, &Error{
-			Reason: "no password provided",
-		}, nil
+		return nil, nil, errNoPassword, nil
 	}
 
 	// Attempt to select user for authentication by username
@@ -74,9 +70,7 @@ func (a *Context) basicAuthenticate(r *http.Request) (*models.User, *models.Sess
 	if err != nil {
 		// Check for unknown user
 		if err == sql.ErrNoRows {
-			return nil, nil, &Error{
-				Reason: "invalid username",
-			}, nil
+			return nil, nil, errInvalidUsername, nil
 		}
 
 		return nil, nil, nil, err
@@ -86,9 +80,7 @@ func (a *Context) basicAuthenticate(r *http.Request) (*models.User, *models.Sess
 	if err := user.TryPassword(password); err != nil {
 		// Check for invalid password
 		if err == models.ErrInvalidPassword {
-			return nil, nil, &Error{
-				Reason: err.Error(),
-			}, nil
+			return nil, nil, errInvalidPassword, nil
 		}
 
 		return nil, nil, nil, err

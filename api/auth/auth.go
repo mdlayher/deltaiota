@@ -21,6 +21,30 @@ const (
 	ctxUser = "user"
 )
 
+var (
+	// errNoUsername is returned when no username is provided for authentication.
+	errNoUsername = &Error{
+		Reason: "no username provided",
+	}
+
+	// errNoPassword is returned when no password is provided for authentication.
+	errNoPassword = &Error{
+		Reason: "no password provided",
+	}
+
+	// errInvalidUsername is returned when an invalid username is provided for
+	// authentication.
+	errInvalidUsername = &Error{
+		Reason: "invalid username",
+	}
+
+	// errInvalidPassword is returned when an invalid password is provided for
+	// authentication.
+	errInvalidPassword = &Error{
+		Reason: models.ErrInvalidPassword.Error(),
+	}
+)
+
 // AuthenticateFunc is a function which may be used to authenticate a user from an
 // input HTTP request.  On success, a user is returned.  On failure, either a client
 // or server error is returned.
