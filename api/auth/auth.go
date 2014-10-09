@@ -72,11 +72,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("authentication failed: %s", e.Reason)
 }
 
+// SetSession sets a gorilla/context Session for the input http.Request.
+func SetSession(r *http.Request, s *models.Session) {
+	context.Set(r, ctxSession, s)
+}
+
 // Session returns the gorilla/context Session for the input http.Request.
 // This function will panic if the user is not properly authenticated, and
 // should only be used in handlers which are always authenticated.
 func Session(r *http.Request) *models.Session {
 	return context.Get(r, ctxSession).(*models.Session)
+}
+
+// SetUser sets a gorilla/context User for the input http.Request.
+func SetUser(r *http.Request, s *models.User) {
+	context.Set(r, ctxUser, s)
 }
 
 // User returns the gorilla/context User for the input http.Request.
@@ -131,8 +141,8 @@ func makeAuthHandler(fn AuthenticateFunc, h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Authentication succeeded, store user and session for later use
-		context.Set(r, ctxUser, user)
-		context.Set(r, ctxSession, session)
+		SetUser(r, user)
+		SetSession(r, session)
 
 		// Invoke input handler
 		h.ServeHTTP(w, r)
