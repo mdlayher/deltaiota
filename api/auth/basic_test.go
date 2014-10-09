@@ -19,8 +19,6 @@ func Test_basicCredentials(t *testing.T) {
 		{"Hello abcdef012346789", "", "", errNotBasicAuthorization},
 		// Invalid base64
 		{"Basic !@#", "", "", errInvalidBase64Authorization},
-		// Invalid credential pair (empty password)
-		{"Basic dGVzdDo=", "", "", errInvalidBasicCredentialPair},
 		// Valid pair
 		{"Basic dGVzdDp0ZXN0", "test", "test", nil},
 	}

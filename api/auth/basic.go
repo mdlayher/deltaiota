@@ -117,7 +117,7 @@ func basicCredentials(header string) (string, string, error) {
 
 	// Split into username/password
 	pair := strings.SplitN(string(buf), ":", 2)
-	if len(pair) < 2 || pair[0] == "" || pair[1] == "" {
+	if len(pair) < 2 {
 		return "", "", errInvalidBasicCredentialPair
 	}
 
