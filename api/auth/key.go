@@ -90,6 +90,12 @@ func (a *Context) keyAuthenticate(r *http.Request) (*models.User, *models.Sessio
 		return nil, nil, errExpiredKey, nil
 	}
 
+	// Update expire time, since authentication succeeded
+	session.Expire = uint64(time.Now().Add(SessionDuration).Unix())
+	if err := a.db.UpdateSession(session); err != nil {
+		return nil, nil, nil, err
+	}
+
 	// Return authenticated user and session
 	return user, session, nil, nil
 }

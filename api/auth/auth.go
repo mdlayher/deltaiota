@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data"
@@ -64,6 +65,12 @@ var (
 	errInvalidBasicCredentialPair = &Error{
 		Reason: "invalid credential pair in HTTP Basic Authorization header",
 	}
+)
+
+var (
+	// SessionDuration is the duration which a session may exist before
+	// it expires, and is deleted.
+	SessionDuration = time.Duration(7 * 24 * time.Hour)
 )
 
 // AuthenticateFunc is a function which may be used to authenticate a user from an

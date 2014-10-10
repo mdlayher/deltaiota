@@ -23,7 +23,7 @@ func (c *Context) PostSession(r *http.Request, vars util.Vars) (int, []byte, err
 	user := auth.User(r)
 
 	// Generate a new session for the user
-	session, err := user.NewSession(time.Now().Add(7 * 24 * time.Hour))
+	session, err := user.NewSession(time.Now().Add(auth.SessionDuration))
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
