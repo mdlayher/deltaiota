@@ -37,11 +37,11 @@ func NewServeMux(db *data.DB) http.Handler {
 	r.Handle("/sessions", ac.BasicAuthHandler(util.JSONAPIHandler(c.PostSession))).Methods("POST")
 
 	// Users API
-	r.Handle("/users", util.JSONAPIHandler(c.ListUsers)).Methods("GET")
-	r.Handle("/users/{id}", util.JSONAPIHandler(c.GetUser)).Methods("GET")
-	r.Handle("/users", util.JSONAPIHandler(c.PostUser)).Methods("POST")
-	r.Handle("/users/{id}", util.JSONAPIHandler(c.PutUser)).Methods("PUT")
-	r.Handle("/users/{id}", util.JSONAPIHandler(c.DeleteUser)).Methods("DELETE")
+	r.Handle("/users", ac.KeyAuthHandler(util.JSONAPIHandler(c.ListUsers))).Methods("GET")
+	r.Handle("/users/{id}", ac.KeyAuthHandler(util.JSONAPIHandler(c.GetUser))).Methods("GET")
+	r.Handle("/users", ac.KeyAuthHandler(util.JSONAPIHandler(c.PostUser))).Methods("POST")
+	r.Handle("/users/{id}", ac.KeyAuthHandler(util.JSONAPIHandler(c.PutUser))).Methods("PUT")
+	r.Handle("/users/{id}", ac.KeyAuthHandler(util.JSONAPIHandler(c.DeleteUser))).Methods("DELETE")
 
 	return r
 }
