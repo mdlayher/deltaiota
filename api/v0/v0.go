@@ -34,7 +34,7 @@ func NewServeMux(db *data.DB) http.Handler {
 	// Set up HTTP routes
 
 	// Sessions API
-	r.Handle("/sessions", ac.BasicAuthHandler(util.JSONAPIHandler(c.PostSession))).Methods("POST")
+	r.Handle("/sessions", ac.PasswordAuthHandler(util.JSONAPIHandler(c.PostSession))).Methods("POST")
 	r.Handle("/sessions", ac.KeyAuthHandler(util.JSONAPIHandler(c.DeleteSession))).Methods("DELETE")
 
 	// Users API

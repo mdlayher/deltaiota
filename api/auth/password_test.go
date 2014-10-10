@@ -8,9 +8,9 @@ import (
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
-// Test_basicAuthenticate verifies that basicAuthenticate properly authenticates
-// users using the HTTP Basic Authorization header.
-func Test_basicAuthenticate(t *testing.T) {
+// Test_passwordAuthenticate verifies that passwordAuthenticate properly authenticates
+// users using the HTTP Basic Authorization header with a username and password pair.
+func Test_passwordAuthenticate(t *testing.T) {
 	// Establish temporary database for test
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
@@ -61,7 +61,7 @@ func Test_basicAuthenticate(t *testing.T) {
 			req.SetBasicAuth(test.username, test.password)
 
 			// Attempt authentication
-			_, _, cErr, sErr := ac.basicAuthenticate(req)
+			_, _, cErr, sErr := ac.passwordAuthenticate(req)
 
 			// Fail tests on any server error
 			if sErr != nil {
@@ -79,47 +79,5 @@ func Test_basicAuthenticate(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
-}
-
-// Test_basicCredentials verifies that basicCredentials produces a correct
-// username and password pair for input HTTP Basic Authorization header.
-func Test_basicCredentials(t *testing.T) {
-	var tests = []struct {
-		input    string
-		username string
-		password string
-		err      *Error
-	}{
-		// Empty input
-		{"", "", "", errNoAuthorizationHeader},
-		// No Authorization type
-		{"abcdef012346789", "", "", errNoAuthorizationType},
-		// Not HTTP Basic
-		{"Hello abcdef012346789", "", "", errNotBasicAuthorization},
-		// Invalid base64
-		{"Basic !@#", "", "", errInvalidBase64Authorization},
-		// Invalid credential pair (no colon)
-		{"Basic dGVzdA==", "", "", errInvalidBasicCredentialPair},
-		// Valid pair
-		{"Basic dGVzdDp0ZXN0", "test", "test", nil},
-	}
-
-	for _, test := range tests {
-		// Split input header into credentials
-		username, password, err := basicCredentials(test.input)
-		if err != nil && err != test.err {
-			t.Fatalf("unexpected err: %v != %v", err, test.err)
-		}
-
-		// Verify username
-		if username != test.username {
-			t.Fatalf("unexpected username: %v != %v", username, test.username)
-		}
-
-		// Verify password
-		if password != test.password {
-			t.Fatalf("unexpected password: %v != %v", password, test.password)
-		}
 	}
 }

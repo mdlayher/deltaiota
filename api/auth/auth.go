@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/data"
@@ -31,6 +33,36 @@ var (
 	// authentication.
 	errInvalidUsername = &Error{
 		Reason: "invalid username",
+	}
+
+	// errNoAuthorizationHeader is returned when an input Authorization header
+	// is blank.
+	errNoAuthorizationHeader = &Error{
+		Reason: "no HTTP Authorization header",
+	}
+
+	// errNoAuthorizationType is returned when an input Authorization header
+	// contains no type.
+	errNoAuthorizationType = &Error{
+		Reason: "no HTTP Authorization type",
+	}
+
+	// errNotBasicAuthorization is returned when an input Authorization header
+	// is not the HTTP Basic type.
+	errNotBasicAuthorization = &Error{
+		Reason: "not HTTP Basic Authorization type",
+	}
+
+	// errInvalidBase64Authorization is returned when an input Authorization header
+	// does not contain valid base64-encoded data.
+	errInvalidBase64Authorization = &Error{
+		Reason: "invalid base64 HTTP Basic Authorization header",
+	}
+
+	// errInvalidBasicCredentialPair is returned when an input Authorization header
+	// does not contain a valid credential pair.
+	errInvalidBasicCredentialPair = &Error{
+		Reason: "invalid credential pair in HTTP Basic Authorization header",
 	}
 )
 
@@ -139,4 +171,38 @@ func makeAuthHandler(fn AuthenticateFunc, h http.HandlerFunc) http.HandlerFunc {
 		// Clear context after use
 		context.Clear(r)
 	})
+}
+
+// basicCredentials returns HTTP Basic authentication credentials from an input header
+// in the form: base64(user + ':' + password).
+func basicCredentials(header string) (string, string, error) {
+	// No headed provided
+	if header == "" {
+		return "", "", errNoAuthorizationHeader
+	}
+
+	// Ensure 2 elements
+	basic := strings.Split(header, " ")
+	if len(basic) != 2 {
+		return "", "", errNoAuthorizationType
+	}
+
+	// Ensure valid format
+	if basic[0] != "Basic" {
+		return "", "", errNotBasicAuthorization
+	}
+
+	// Decode base64'd username:password pair
+	buf, err := base64.URLEncoding.DecodeString(basic[1])
+	if err != nil {
+		return "", "", errInvalidBase64Authorization
+	}
+
+	// Split into username/password
+	pair := strings.SplitN(string(buf), ":", 2)
+	if len(pair) < 2 {
+		return "", "", errInvalidBasicCredentialPair
+	}
+
+	return pair[0], pair[1], nil
 }
