@@ -22,6 +22,15 @@ const (
 		) VALUES (?, ?, ?);
 	`
 
+	// sqlUpdateSession is the SQL statement used to update an existing Session
+	sqlUpdateSession = `
+		UPDATE sessions SET
+			"user_id" = ?
+			, "key" = ?
+			, "expire" = ?
+		WHERE id = ?;
+	`
+
 	// sqlDeleteSession is the SQL statement used to delete an existing Session
 	sqlDeleteSession = `
 		DELETE FROM sessions WHERE id = ?;
@@ -38,6 +47,14 @@ func (db *DB) SelectSessionByKey(key string) (*models.Session, error) {
 func (db *DB) InsertSession(u *models.Session) error {
 	return db.withTx(func(tx *Tx) error {
 		return tx.InsertSession(u)
+	})
+}
+
+// UpdateSession starts a transaction, updates the input Session by its ID, and attempts
+// to commit the transaction.
+func (db *DB) UpdateSession(u *models.Session) error {
+	return db.withTx(func(tx *Tx) error {
+		return tx.UpdateSession(u)
 	})
 }
 
@@ -107,6 +124,13 @@ func (tx *Tx) InsertSession(u *models.Session) error {
 	// Store generated ID
 	u.ID = uint64(id)
 	return nil
+}
+
+// UpdateSession updates the input Session by its ID, in the context of the
+// current transaction.
+func (tx *Tx) UpdateSession(u *models.Session) error {
+	_, err := tx.Tx.Exec(sqlUpdateSession, u.SQLWriteFields()...)
+	return err
 }
 
 // DeleteSession updates the input Session by its ID, in the context of the
