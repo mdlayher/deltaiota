@@ -10,6 +10,17 @@ import (
 )
 
 var (
+	// errNoPassword is returned when no password is provided for authentication.
+	errNoPassword = &Error{
+		Reason: "no password provided",
+	}
+
+	// errInvalidPassword is returned when an invalid password is provided for
+	// authentication.
+	errInvalidPassword = &Error{
+		Reason: models.ErrInvalidPassword.Error(),
+	}
+
 	// errNoAuthorizationHeader is returned when an input Authorization header
 	// is blank.
 	errNoAuthorizationHeader = &Error{

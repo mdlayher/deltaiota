@@ -27,21 +27,10 @@ var (
 		Reason: "no username provided",
 	}
 
-	// errNoPassword is returned when no password is provided for authentication.
-	errNoPassword = &Error{
-		Reason: "no password provided",
-	}
-
 	// errInvalidUsername is returned when an invalid username is provided for
 	// authentication.
 	errInvalidUsername = &Error{
 		Reason: "invalid username",
-	}
-
-	// errInvalidPassword is returned when an invalid password is provided for
-	// authentication.
-	errInvalidPassword = &Error{
-		Reason: models.ErrInvalidPassword.Error(),
 	}
 )
 
