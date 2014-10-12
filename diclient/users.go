@@ -24,10 +24,16 @@ func (u *UsersService) GetUser(id uint64) (*models.User, *Response, error) {
 	return usersRes.Users[0], res, err
 }
 
+// CreateUser generates an API user using the input User object.
+func (u *UsersService) CreateUser(user *models.User) (*Response, error) {
+	_, res, err := u.usersRequest("POST", "users", user)
+	return res, err
+}
+
 // usersRequest generates and performs a HTTP request to the Users API.
 func (u *UsersService) usersRequest(method string, endpoint string, body interface{}) (*v0.UsersResponse, *Response, error) {
 	// Create request for Users endpoint
-	req, err := u.client.NewRequest(method, endpoint, nil)
+	req, err := u.client.NewRequest(method, endpoint, body)
 	if err != nil {
 		return nil, nil, err
 	}
