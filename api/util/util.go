@@ -8,6 +8,12 @@ import (
 )
 
 const (
+	// httpConnection is the name of the ConnectionHTTP header.
+	httpConnection = "Connection"
+
+	// httpContentLength is the name of the Content-Length HTTP header.
+	httpContentLength = "Content-Length"
+
 	// httpContentType is the name of the Content-Type HTTP header.
 	httpContentType = "Content-Type"
 

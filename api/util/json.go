@@ -3,6 +3,7 @@ package util
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -30,14 +31,17 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 
 		// Write HTTP status code
 		w.Header().Set(httpContentType, jsonContentType)
+		w.Header().Set(httpConnection, "close")
 		w.WriteHeader(code)
 
 		// If HTTP HEAD request, write no body
 		if r.Method == "HEAD" {
+			w.Header().Set(httpContentLength, "0")
 			w.Write(nil)
 			return
 		}
 
+		w.Header().Set(httpContentLength, strconv.Itoa(len(body)))
 		w.Write(body)
 	})
 }
