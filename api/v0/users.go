@@ -63,6 +63,30 @@ type UsersResponse struct {
 	Users []*models.User `json:"users"`
 }
 
+// UsersAPI is a util.JSONAPIFunc, and is the single entry point for the Users API.
+// This method delegates to other methods as appropriate to handle incoming requests.
+func (c *Context) UsersAPI(r *http.Request, vars util.Vars) (int, []byte, error) {
+	// Switch based on HTTP method
+	switch r.Method {
+	case "GET", "HEAD":
+		// If ID present, request for single user
+		if _, ok := vars["id"]; ok {
+			return c.GetUser(r, vars)
+		}
+
+		// No ID, request for list of users
+		return c.ListUsers(r, vars)
+	case "POST":
+		return c.PostUser(r, vars)
+	case "PUT":
+		return c.PutUser(r, vars)
+	case "DELETE":
+		return c.DeleteUser(r, vars)
+	default:
+		return util.MethodNotAllowed(r, vars)
+	}
+}
+
 // ListUsers is a util.JSONAPIFunc which returns HTTP 200 and a JSON list of users
 // on success, or a non-200 HTTP status code and an error response on failure.
 func (c *Context) ListUsers(r *http.Request, vars util.Vars) (int, []byte, error) {
