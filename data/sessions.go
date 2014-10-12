@@ -35,6 +35,12 @@ const (
 	sqlDeleteSession = `
 		DELETE FROM sessions WHERE id = ?;
 	`
+
+	// sqlDeleteSessionsByUserID is the SQL statement used to delete all Sessions
+	// for a user, by the user's ID
+	sqlDeleteSessionsByUserID = `
+		DELETE FROM sessions WHERE user_id = ?;
+	`
 )
 
 // SelectSessionByKey returns a single Session by key from the database.
@@ -63,6 +69,14 @@ func (db *DB) UpdateSession(u *models.Session) error {
 func (db *DB) DeleteSession(s *models.Session) error {
 	return db.withTx(func(tx *Tx) error {
 		return tx.DeleteSession(s)
+	})
+}
+
+// DeleteSessionsByUserID starts a transaction, deletes all Sessions with the matching user ID,
+// and attempts to commit the transaction.
+func (db *DB) DeleteSessionsByUserID(userID uint64) error {
+	return db.withTx(func(tx *Tx) error {
+		return tx.DeleteSessionsByUserID(userID)
 	})
 }
 
@@ -137,6 +151,13 @@ func (tx *Tx) UpdateSession(u *models.Session) error {
 // current transaction.
 func (tx *Tx) DeleteSession(s *models.Session) error {
 	_, err := tx.Tx.Exec(sqlDeleteSession, s.ID)
+	return err
+}
+
+// DeleteSessionsByUserID deletes all Sessions with the input user ID, in the
+// context of the current transaction.
+func (tx *Tx) DeleteSessionsByUserID(userID uint64) error {
+	_, err := tx.Tx.Exec(sqlDeleteSessionsByUserID, userID)
 	return err
 }
 

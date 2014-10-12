@@ -242,6 +242,11 @@ func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 		return http.StatusInternalServerError, nil, err
 	}
 
+	// Delete all sessions for user
+	if err := c.db.DeleteSessionsByUserID(user.ID); err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+
 	// Delete user
 	if err := c.db.DeleteUser(user); err != nil {
 		return http.StatusInternalServerError, nil, err
