@@ -365,6 +365,9 @@ func TestPostUser(t *testing.T) {
 				return
 			}
 
+			// Strip password for comparison
+			user.Password = ""
+
 			// Verify user is the same as the mock we created earlier
 			if !reflect.DeepEqual(user, res.Users[0]) {
 				t.Errorf("unexpected user: %v != %v", user, res.Users[0])
@@ -519,6 +522,9 @@ func TestPutUser(t *testing.T) {
 				t.Errorf("unexpected number of users returned: %v", res.Users)
 				return
 			}
+
+			// Strip password for comparison
+			user.Password = ""
 
 			// Verify user is the same as the mock we created earlier
 			if !reflect.DeepEqual(user, res.Users[0]) {

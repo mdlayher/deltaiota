@@ -3,7 +3,7 @@ package v0
 import (
 	"database/sql"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -71,6 +71,11 @@ func (c *Context) ListUsers(r *http.Request, vars util.Vars) (int, []byte, error
 		return http.StatusInternalServerError, nil, err
 	}
 
+	// Strip all passwords from output
+	for i := range users {
+		users[i].Password = ""
+	}
+
 	// Wrap in response and return
 	body, err := json.Marshal(UsersResponse{
 		Users: users,
@@ -104,6 +109,9 @@ func (c *Context) GetUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 		return http.StatusInternalServerError, nil, err
 	}
 
+	// Strip password from output
+	user.Password = ""
+
 	// Wrap in response and return
 	body, err := json.Marshal(UsersResponse{
 		Users: []*models.User{user},
@@ -135,6 +143,9 @@ func (c *Context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 
 		return http.StatusInternalServerError, nil, err
 	}
+
+	// Strip password from output
+	user.Password = ""
 
 	// Wrap in response and return
 	body, err = json.Marshal(UsersResponse{
@@ -195,6 +206,9 @@ func (c *Context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 		return http.StatusInternalServerError, nil, err
 	}
 
+	// Strip password from output
+	user.Password = ""
+
 	// Wrap in response and return
 	body, err = json.Marshal(UsersResponse{
 		Users: []*models.User{user},
@@ -241,52 +255,19 @@ func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 // On failure, it will return a message body or an error, causing the caller to
 // immediately send the result.
 func (c *Context) jsonToUser(r *http.Request) (*models.User, int, []byte, error) {
-	// Read entire request body
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, http.StatusInternalServerError, nil, err
-	}
-
 	// Unmarshal body into a User
 	user := new(models.User)
-	if err := json.Unmarshal(body, user); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
 		// Check for bad input JSON
-		if _, ok := err.(*json.SyntaxError); ok {
+		if _, ok := err.(*json.SyntaxError); ok || err == io.EOF || err == io.ErrUnexpectedEOF {
 			return nil, usersCode[userJSONSyntax], usersJSON[userJSONSyntax], nil
 		}
 
 		return nil, http.StatusInternalServerError, nil, err
 	}
 
-	// Unmarshal JSON into raw message for further processing
-	var jsonMap map[string]*json.RawMessage
-	if err := json.Unmarshal(body, &jsonMap); err != nil {
-		return nil, http.StatusInternalServerError, nil, err
-	}
-
-	// Ensure password key was passed
-	if _, ok := jsonMap["password"]; !ok {
-		// Set code for missing parameter
-		code := usersCode[userMissingParameters]
-
-		// Generate empty field error
-		emptyErr := &models.EmptyFieldError{
-			Field: "password",
-		}
-
-		// Return customized error object
-		body, err := json.Marshal(util.ErrRes(code, emptyErr.Error()))
-		return nil, code, body, err
-	}
-
-	// Attempt to retrieve password from raw message
-	var password string
-	if err := json.Unmarshal(*jsonMap["password"], &password); err != nil {
-		return nil, http.StatusInternalServerError, nil, err
-	}
-
 	// Attempt to set password from input
-	if err := user.SetPassword(password); err != nil {
+	if err := user.SetPassword(user.Password); err != nil {
 		// If empty password was passed, we are missing a parameter
 		if emptyErr, ok := err.(*models.EmptyFieldError); ok {
 			// Set code for missing parameter

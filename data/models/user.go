@@ -22,8 +22,7 @@ type User struct {
 	LastName  string `db:"last_name" json:"lastName"`
 	Email     string `db:"email" json:"email"`
 	Phone     string `db:"phone" json:"phone"`
-
-	password string `db:"password"`
+	Password  string `db:"password" json:"password,omitempty"`
 }
 
 // CopyFrom copies fields from an input User into the receiving User struct.
@@ -33,12 +32,12 @@ func (u *User) CopyFrom(user *User) {
 	u.LastName = user.LastName
 	u.Email = user.Email
 	u.Phone = user.Phone
-	u.password = user.password
+	u.Password = user.Password
 }
 
 // NewSession generates a new Session for this user.
 func (u *User) NewSession(expire time.Time) (*Session, error) {
-	return NewSession(u.ID, u.password, expire)
+	return NewSession(u.ID, u.Password, expire)
 }
 
 // SetPassword hashes the input password using bcrypt, storing the password
@@ -56,7 +55,7 @@ func (u *User) SetPassword(password string) error {
 	if err != nil {
 		return err
 	}
-	u.password = string(hash)
+	u.Password = string(hash)
 
 	return nil
 }
@@ -65,7 +64,7 @@ func (u *User) SetPassword(password string) error {
 // current password.
 func (u *User) TryPassword(password string) error {
 	// Attempt to hash password
-	err := bcrypt.CompareHashAndPassword([]byte(u.password), []byte(password))
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 
 	// Check for bcrypt-specific password failure, return more generic failure
 	// (other packages should not have to import or know about bcrypt to know
@@ -78,16 +77,6 @@ func (u *User) TryPassword(password string) error {
 	return err
 }
 
-// SetTestPassword directly stores the input password in the receiving
-// User struct.
-//
-// This method should ONLY be used for testing, to save time on bcrypt hashing
-// for test user creation.
-func (u *User) SetTestPassword(password string) {
-	u.password = "test-password-" + password
-	return
-}
-
 // SQLReadFields returns the correct field order to scan SQL row results into the
 // receiving User struct.
 func (u *User) SQLReadFields() []interface{} {
@@ -98,8 +87,7 @@ func (u *User) SQLReadFields() []interface{} {
 		&u.LastName,
 		&u.Email,
 		&u.Phone,
-
-		&u.password,
+		&u.Password,
 	}
 }
 
@@ -112,8 +100,7 @@ func (u *User) SQLWriteFields() []interface{} {
 		u.LastName,
 		u.Email,
 		u.Phone,
-
-		u.password,
+		u.Password,
 
 		// Last argument for WHERE clause
 		u.ID,
@@ -144,7 +131,7 @@ func (u *User) Validate() error {
 			Field: "email",
 		}
 	}
-	if u.password == "" {
+	if u.Password == "" {
 		return &EmptyFieldError{
 			Field: "password",
 		}

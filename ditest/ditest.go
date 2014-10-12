@@ -58,17 +58,13 @@ func WithTemporaryDB(fn func(db *data.DB)) error {
 // MockUser generates a single User with mock data, used for testing.
 // The user is randomly generated, but is not guaranteed to be unique.
 func MockUser() *models.User {
-	// Generate user
-	user := &models.User{
+	return &models.User{
 		Username:  RandomString(10),
 		FirstName: RandomString(10),
 		LastName:  RandomString(10),
 		Email:     fmt.Sprintf("%s@%s.com", RandomString(6), RandomString(6)),
+		Password:  RandomString(10),
 	}
-
-	// Generate test password, only used for duration of test
-	user.SetTestPassword(RandomString(10))
-	return user
 }
 
 // RandomString generates a random string of length n.
