@@ -41,24 +41,24 @@ func NewSession(userID uint64, password string, expire time.Time) (*Session, err
 
 // SQLReadFields returns the correct field order to scan SQL row results into the
 // receiving Session struct.
-func (u *Session) SQLReadFields() []interface{} {
+func (s *Session) SQLReadFields() []interface{} {
 	return []interface{}{
-		&u.ID,
-		&u.UserID,
-		&u.Key,
-		&u.Expire,
+		&s.ID,
+		&s.UserID,
+		&s.Key,
+		&s.Expire,
 	}
 }
 
 // SQLWriteFields returns the correct field order for SQL write actions (such as
 // insert or update), for the receiving Session struct.
-func (u *Session) SQLWriteFields() []interface{} {
+func (s *Session) SQLWriteFields() []interface{} {
 	return []interface{}{
-		u.UserID,
-		u.Key,
-		u.Expire,
+		s.UserID,
+		s.Key,
+		s.Expire,
 
 		// Last argument for WHERE clause
-		u.ID,
+		s.ID,
 	}
 }

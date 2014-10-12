@@ -50,17 +50,17 @@ func (db *DB) SelectSessionByKey(key string) (*models.Session, error) {
 
 // InsertSession starts a transaction, inserts a new Session, and attempts to commit
 // the transaction.
-func (db *DB) InsertSession(u *models.Session) error {
+func (db *DB) InsertSession(s *models.Session) error {
 	return db.WithTx(func(tx *Tx) error {
-		return tx.InsertSession(u)
+		return tx.InsertSession(s)
 	})
 }
 
 // UpdateSession starts a transaction, updates the input Session by its ID, and attempts
 // to commit the transaction.
-func (db *DB) UpdateSession(u *models.Session) error {
+func (db *DB) UpdateSession(s *models.Session) error {
 	return db.WithTx(func(tx *Tx) error {
-		return tx.UpdateSession(u)
+		return tx.UpdateSession(s)
 	})
 }
 
@@ -122,9 +122,9 @@ func (db *DB) selectSingleSession(query string, args ...interface{}) (*models.Se
 }
 
 // InsertSession inserts a new Session in the context of the current transaction.
-func (tx *Tx) InsertSession(u *models.Session) error {
+func (tx *Tx) InsertSession(s *models.Session) error {
 	// Execute SQL to insert Session
-	result, err := tx.Tx.Exec(sqlInsertSession, u.SQLWriteFields()...)
+	result, err := tx.Tx.Exec(sqlInsertSession, s.SQLWriteFields()...)
 	if err != nil {
 		return err
 	}
@@ -136,14 +136,14 @@ func (tx *Tx) InsertSession(u *models.Session) error {
 	}
 
 	// Store generated ID
-	u.ID = uint64(id)
+	s.ID = uint64(id)
 	return nil
 }
 
 // UpdateSession updates the input Session by its ID, in the context of the
 // current transaction.
-func (tx *Tx) UpdateSession(u *models.Session) error {
-	_, err := tx.Tx.Exec(sqlUpdateSession, u.SQLWriteFields()...)
+func (tx *Tx) UpdateSession(s *models.Session) error {
+	_, err := tx.Tx.Exec(sqlUpdateSession, s.SQLWriteFields()...)
 	return err
 }
 
