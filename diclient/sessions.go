@@ -31,3 +31,16 @@ func (u *SessionsService) CreateSession(username string, password string) (*mode
 	// Return session from API
 	return sessionRes.Session, res, nil
 }
+
+// DeleteSession attempts to destroy the current Session for the API.
+func (u *SessionsService) DeleteSession() (*Response, error) {
+	// Delete request for Sessions endpoint
+	req, err := u.client.NewRequest("DELETE", "sessions", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform request
+	res, err := u.client.Do(req, nil)
+	return res, err
+}
