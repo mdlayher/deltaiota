@@ -1,5 +1,16 @@
 /* deltaiota sqlite schema */
 BEGIN TRANSACTION;
+/* notifications */
+CREATE TABLE "notifications" (
+	"id"          INTEGER PRIMARY KEY AUTOINCREMENT
+	, "user_id"   INTEGER NOT NULL
+	, "timestamp" INTEGER NOT NULL
+	, "read"      INTEGER NOT NULL
+	, "text"         TEXT NOT NULL
+	, "uri"          TEXT NOT NULL
+
+	, FOREIGN KEY(user_id) REFERENCES users(id)
+);
 /* sessions */
 CREATE TABLE "sessions" (
 	"id"        INTEGER PRIMARY KEY AUTOINCREMENT
