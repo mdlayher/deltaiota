@@ -45,3 +45,9 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 		w.Write(body)
 	})
 }
+
+// MethodNotAllowed is a JSONAPIFunc which returns HTTP 405, as well as the
+// appropriate JSON response body.
+func MethodNotAllowed(r *http.Request, vars Vars) (int, []byte, error) {
+	return Code[methodNotAllowed], JSON[methodNotAllowed], nil
+}

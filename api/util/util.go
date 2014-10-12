@@ -25,12 +25,16 @@ const (
 const (
 	InternalServerError = "internal server error"
 	NotAuthorized       = "not authorized"
+
+	methodNotAllowed = "method not allowed"
 )
 
 // JSON util, map of client errors to response codes.
 var Code = map[string]int{
 	InternalServerError: http.StatusInternalServerError,
 	NotAuthorized:       http.StatusUnauthorized,
+
+	methodNotAllowed: http.StatusMethodNotAllowed,
 }
 
 // Generated JSON responses for various client-facing errors.
