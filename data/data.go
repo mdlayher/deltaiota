@@ -100,6 +100,19 @@ func (db *DB) IsConstraintFailure(err error) bool {
 	return false
 }
 
+// IsReadonly returns whether or not an input error is due to a readonly database.
+func (db *DB) IsReadonly(err error) bool {
+	// sqlite3-specific readonly checking
+	if db.driver == driverSqlite3 {
+		if sqliteErr, ok := err.(sqlite3.Error); ok {
+			return sqliteErr.Code == sqlite3.ErrReadonly
+		}
+	}
+
+	// Not readonly
+	return false
+}
+
 // WithTx creates a new wrapped transaction, invokes an input closure, and
 // commits or rolls back the transaction, depending on the result of the
 // closure invocation.
