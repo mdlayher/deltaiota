@@ -14,6 +14,7 @@ import (
 	"net/url"
 
 	"github.com/mdlayher/deltaiota/api/util"
+	"github.com/mdlayher/deltaiota/data/models"
 )
 
 const (
@@ -31,6 +32,9 @@ type Client struct {
 	url    *url.URL
 
 	userAgent string
+
+	username string
+	session  *models.Session
 
 	Sessions *SessionsService
 	Users    *UsersService
@@ -70,6 +74,23 @@ func NewClient(host string, client *http.Client) (*Client, error) {
 	return c, nil
 }
 
+// AuthenticatePassword performs API authentication using the input username and password,
+// creating a new session on successful authentication, and storing it for future use.
+func (c *Client) AuthenticatePassword(username string, password string) (*models.Session, error) {
+	// Attempt authentication to create a Session
+	session, _, err := c.Sessions.CreateSession(username, password)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store username and session for future use
+	c.username = username
+	c.session = session
+
+	// Return session for client consumption
+	return session, nil
+}
+
 // NewRequest creates a new HTTP request, using the specified HTTP method and API endpoint.
 // Optionally, a request body may be sent.
 func (c *Client) NewRequest(method string, endpoint string, body interface{}) (*http.Request, error) {
@@ -95,6 +116,11 @@ func (c *Client) NewRequest(method string, endpoint string, body interface{}) (*
 	req, err := http.NewRequest(method, u.String(), buf)
 	if err != nil {
 		return nil, err
+	}
+
+	// If a session is set, use it for authentication
+	if c.session != nil {
+		req.SetBasicAuth(c.username, c.session.Key)
 	}
 
 	// Set headers to indicate proper content type
