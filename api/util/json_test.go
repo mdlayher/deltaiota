@@ -50,6 +50,8 @@ func TestJSONAPIHandler(t *testing.T) {
 		{bodyFn, "HEAD", http.StatusOK, nil, nil},
 		// HEAD - Error function
 		{errFn, "HEAD", http.StatusInternalServerError, nil, expErr},
+		// Unknown HTTP method
+		{MethodNotAllowed, "CAT", http.StatusMethodNotAllowed, JSON[methodNotAllowed], nil},
 	}
 
 	// Iterate and run all tests
