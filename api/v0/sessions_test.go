@@ -24,9 +24,12 @@ func TestPostSession(t *testing.T) {
 			db: db,
 		}
 
-		// Generate mock user
+		// Generate and store mock user
 		user := ditest.MockUser()
-		user.ID = 1000
+		if err := c.db.InsertUser(user); err != nil {
+			t.Error(err)
+			return
+		}
 
 		// Generate HTTP request
 		r, err := http.NewRequest("POST", "/", nil)
@@ -81,9 +84,16 @@ func TestDeleteSession(t *testing.T) {
 			db: db,
 		}
 
+		// Generate and store mock user
+		user := ditest.MockUser()
+		if err := c.db.InsertUser(user); err != nil {
+			t.Error(err)
+			return
+		}
+
 		// Generate and store mock session
 		session := &models.Session{
-			UserID: 1,
+			UserID: user.ID,
 			Key:    ditest.RandomString(32),
 			Expire: uint64(time.Now().Unix()),
 		}
