@@ -46,6 +46,12 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 	})
 }
 
+// JSONAPIErr accepts an error and generates the appropriate JSONAPIFunc return
+// signature, for convenience and reduced code reptition.
+func JSONAPIErr(err error) (int, []byte, error) {
+	return http.StatusInternalServerError, nil, err
+}
+
 // MethodNotAllowed is a JSONAPIFunc which returns HTTP 405, as well as the
 // appropriate JSON response body.
 func MethodNotAllowed(r *http.Request, vars Vars) (int, []byte, error) {

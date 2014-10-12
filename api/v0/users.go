@@ -93,7 +93,7 @@ func (c *Context) ListUsers(r *http.Request, vars util.Vars) (int, []byte, error
 	// Fetch a list of all users from the database
 	users, err := c.db.SelectAllUsers()
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Strip all passwords from output
@@ -131,7 +131,7 @@ func (c *Context) GetUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 			return usersCode[userNotFound], usersJSON[userNotFound], nil
 		}
 
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Strip password from output
@@ -151,7 +151,7 @@ func (c *Context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 	// Read and validate request input into a User struct
 	user, code, body, err := c.jsonToUser(r)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// If a body was written (probably client error), return now
@@ -166,7 +166,7 @@ func (c *Context) PostUser(r *http.Request, vars util.Vars) (int, []byte, error)
 			return usersCode[userConflict], usersJSON[userConflict], nil
 		}
 
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Strip password from output
@@ -203,13 +203,13 @@ func (c *Context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 			return usersCode[userNotFound], usersJSON[userNotFound], nil
 		}
 
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Read and validate request input into a User struct
 	newUser, code, body, err := c.jsonToUser(r)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// If a body was written (probably client error), return now
@@ -228,7 +228,7 @@ func (c *Context) PutUser(r *http.Request, vars util.Vars) (int, []byte, error) 
 			return usersCode[userConflict], usersJSON[userConflict], nil
 		}
 
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Strip password from output
@@ -264,7 +264,7 @@ func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 			return usersCode[userNotFound], usersJSON[userNotFound], nil
 		}
 
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Clear user data within a transaction
@@ -280,7 +280,7 @@ func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 
 	// Check for transaction errors
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	return http.StatusNoContent, nil, nil

@@ -25,12 +25,12 @@ func (c *Context) PostSession(r *http.Request, vars util.Vars) (int, []byte, err
 	// Generate a new session for the user
 	session, err := user.NewSession(time.Now().Add(auth.SessionDuration))
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Store session for later use
 	if err := c.db.InsertSession(session); err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Wrap in response and return
@@ -48,7 +48,7 @@ func (c *Context) DeleteSession(r *http.Request, vars util.Vars) (int, []byte, e
 
 	// Delete session now
 	if err := c.db.DeleteSession(session); err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	return http.StatusNoContent, nil, nil

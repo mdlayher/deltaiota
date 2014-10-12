@@ -21,7 +21,7 @@ func (c *Context) ListNotificationsForUser(r *http.Request, vars util.Vars) (int
 	// Fetch a list of notifications for this user from the database
 	notifications, err := c.db.SelectNotificationsByUserID(auth.User(r).ID)
 	if err != nil {
-		return http.StatusInternalServerError, nil, err
+		return util.JSONAPIErr(err)
 	}
 
 	// Wrap in response
