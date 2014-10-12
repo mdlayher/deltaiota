@@ -95,10 +95,10 @@ func (db *DB) IsConstraintFailure(err error) bool {
 	return false
 }
 
-// withTx creates a new wrapped transaction, invokes an input closure, and
+// WithTx creates a new wrapped transaction, invokes an input closure, and
 // commits or rolls back the transaction, depending on the result of the
 // closure invocation.
-func (db *DB) withTx(fn func(tx *Tx) error) error {
+func (db *DB) WithTx(fn func(tx *Tx) error) error {
 	// Start a wrapped transaction
 	tx, err := db.Begin()
 	if err != nil {

@@ -51,7 +51,7 @@ func (db *DB) SelectSessionByKey(key string) (*models.Session, error) {
 // InsertSession starts a transaction, inserts a new Session, and attempts to commit
 // the transaction.
 func (db *DB) InsertSession(u *models.Session) error {
-	return db.withTx(func(tx *Tx) error {
+	return db.WithTx(func(tx *Tx) error {
 		return tx.InsertSession(u)
 	})
 }
@@ -59,7 +59,7 @@ func (db *DB) InsertSession(u *models.Session) error {
 // UpdateSession starts a transaction, updates the input Session by its ID, and attempts
 // to commit the transaction.
 func (db *DB) UpdateSession(u *models.Session) error {
-	return db.withTx(func(tx *Tx) error {
+	return db.WithTx(func(tx *Tx) error {
 		return tx.UpdateSession(u)
 	})
 }
@@ -67,7 +67,7 @@ func (db *DB) UpdateSession(u *models.Session) error {
 // DeleteSession starts a transaction, deletes the input Session by its ID, and attempts
 // to commit the transaction.
 func (db *DB) DeleteSession(s *models.Session) error {
-	return db.withTx(func(tx *Tx) error {
+	return db.WithTx(func(tx *Tx) error {
 		return tx.DeleteSession(s)
 	})
 }
@@ -75,7 +75,7 @@ func (db *DB) DeleteSession(s *models.Session) error {
 // DeleteSessionsByUserID starts a transaction, deletes all Sessions with the matching user ID,
 // and attempts to commit the transaction.
 func (db *DB) DeleteSessionsByUserID(userID uint64) error {
-	return db.withTx(func(tx *Tx) error {
+	return db.WithTx(func(tx *Tx) error {
 		return tx.DeleteSessionsByUserID(userID)
 	})
 }

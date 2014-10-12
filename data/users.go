@@ -69,7 +69,7 @@ func (db *DB) SelectUserByUsername(username string) (*models.User, error) {
 // InsertUser starts a transaction, inserts a new User, and attempts to commit
 // the transaction.
 func (db *DB) InsertUser(u *models.User) error {
-	return db.withTx(func(tx *Tx) error {
+	return db.WithTx(func(tx *Tx) error {
 		return tx.InsertUser(u)
 	})
 }
@@ -77,7 +77,7 @@ func (db *DB) InsertUser(u *models.User) error {
 // UpdateUser starts a transaction, updates the input User by its ID, and attempts
 // to commit the transaction.
 func (db *DB) UpdateUser(u *models.User) error {
-	return db.withTx(func(tx *Tx) error {
+	return db.WithTx(func(tx *Tx) error {
 		return tx.UpdateUser(u)
 	})
 }
@@ -85,7 +85,7 @@ func (db *DB) UpdateUser(u *models.User) error {
 // DeleteUser starts a transaction, deletes the input User by its ID, and attempts
 // to commit the transaction.
 func (db *DB) DeleteUser(u *models.User) error {
-	return db.withTx(func(tx *Tx) error {
+	return db.WithTx(func(tx *Tx) error {
 		return tx.DeleteUser(u)
 	})
 }
