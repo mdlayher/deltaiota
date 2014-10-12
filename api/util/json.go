@@ -24,7 +24,7 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 		// possible errors which occurred.
 		code, body, err := fn(r, mux.Vars(r))
 		if err != nil {
-			log.Println(err)
+			log.Printf("[%s: %s %s] %s", r.RemoteAddr, r.Method, r.URL.Path, err.Error())
 		}
 
 		// Write HTTP status code
