@@ -25,6 +25,8 @@ var (
 type DB struct {
 	*sql.DB
 
+	driver string
+
 	// preparedStmts is a map of query strings to prepared database statements.
 	// On first use, queries are prepared and added to the map for later re-use.
 	// On shutdown, all prepared statementes are cleaned up.
@@ -40,9 +42,10 @@ func (db *DB) Open(driver string, dsn string) error {
 		return err
 	}
 	db.DB = d
+	db.driver = driver
 
 	// Perform driver-specific setup
-	if driver == driverSqlite3 {
+	if db.driver == driverSqlite3 {
 		if err := db.sqlite3Setup(); err != nil {
 			return err
 		}
@@ -87,8 +90,10 @@ func (db *DB) Begin() (*Tx, error) {
 // database constraint, such as an insert of an item which is not unique.
 func (db *DB) IsConstraintFailure(err error) bool {
 	// sqlite3-specific constraint failure checking
-	if sqliteErr, ok := err.(sqlite3.Error); ok {
-		return sqliteErr.Code == sqlite3.ErrConstraint
+	if db.driver == driverSqlite3 {
+		if sqliteErr, ok := err.(sqlite3.Error); ok {
+			return sqliteErr.Code == sqlite3.ErrConstraint
+		}
 	}
 
 	// Not a constraint failure
