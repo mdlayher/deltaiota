@@ -93,7 +93,10 @@ func (a *Context) keyAuthenticate(r *http.Request) (*models.User, *models.Sessio
 	// Update expire time, since authentication succeeded
 	session.Expire = uint64(time.Now().Add(SessionDuration).Unix())
 	if err := a.db.UpdateSession(session); err != nil {
-		return nil, nil, nil, err
+		// If database is readonly, ignore error
+		if !a.db.IsReadonly(err) {
+			return nil, nil, nil, err
+		}
 	}
 
 	// Return authenticated user and session
