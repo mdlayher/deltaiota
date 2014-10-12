@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/mdlayher/deltaiota/api/util"
+	"github.com/mdlayher/deltaiota/data"
 	"github.com/mdlayher/deltaiota/data/models"
 )
 
@@ -242,13 +243,19 @@ func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 		return http.StatusInternalServerError, nil, err
 	}
 
-	// Delete all sessions for user
-	if err := c.db.DeleteSessionsByUserID(user.ID); err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
+	// Clear user data within a transaction
+	err = c.db.WithTx(func(tx *data.Tx) error {
+		// Delete all sessions for user
+		if err := tx.DeleteSessionsByUserID(user.ID); err != nil {
+			return err
+		}
 
-	// Delete user
-	if err := c.db.DeleteUser(user); err != nil {
+		// Delete user
+		return tx.DeleteUser(user)
+	})
+
+	// Check for transaction errors
+	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
 
