@@ -1,5 +1,4 @@
 /* deltaiota sqlite schema */
-PRAGMA foreign_keys = OFF;
 BEGIN TRANSACTION;
 /* sessions */
 CREATE TABLE "sessions" (
@@ -7,6 +6,8 @@ CREATE TABLE "sessions" (
 	, "user_id" INTEGER NOT NULL
 	, "key"        TEXT NOT NULL
 	, "expire"  INTEGER NOT NULL
+
+	, FOREIGN KEY(user_id) REFERENCES users(id)
 );
 CREATE UNIQUE INDEX "sessions_unique_key" ON "sessions" ("key");
 /* users */

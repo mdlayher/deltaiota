@@ -10,6 +10,11 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+const (
+	// driverSqlite3 is the name of the sqlite3 database/sql driver.
+	driverSqlite3 = "sqlite3"
+)
+
 var (
 	// ErrMultipleResults is returned when a query should return only zero or a single
 	// result, but returns two or more results.
@@ -35,6 +40,13 @@ func (db *DB) Open(driver string, dsn string) error {
 		return err
 	}
 	db.DB = d
+
+	// Perform driver-specific setup
+	if driver == driverSqlite3 {
+		if err := db.sqlite3Setup(); err != nil {
+			return err
+		}
+	}
 
 	// Initialize prepared statement map and mutex
 	db.preparedStmts = make(map[string]*sql.Stmt)
@@ -167,6 +179,17 @@ func (db *DB) withPreparedRows(query string, fn func(rows *Rows) error, args ...
 
 	// Return any errors
 	return err
+}
+
+// sqlite3Setup performs setup routines specific to the sqlite3 database driver,
+// each time the database is initialized.
+func (db *DB) sqlite3Setup() error {
+	// Enforce foreign keys
+	if _, err := db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Tx is a wrapped database transaction, which provides additional methods
