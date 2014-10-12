@@ -25,8 +25,6 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 		code, body, err := fn(r, mux.Vars(r))
 		if err != nil {
 			log.Println(err)
-			code = Code[InternalServerError]
-			body = JSON[InternalServerError]
 		}
 
 		// Write HTTP status code
@@ -49,7 +47,7 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 // JSONAPIErr accepts an error and generates the appropriate JSONAPIFunc return
 // signature, for convenience and reduced code reptition.
 func JSONAPIErr(err error) (int, []byte, error) {
-	return http.StatusInternalServerError, nil, err
+	return Code[InternalServerError], JSON[InternalServerError], err
 }
 
 // MethodNotAllowed is a JSONAPIFunc which returns HTTP 405, as well as the
