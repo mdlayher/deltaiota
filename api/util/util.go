@@ -4,7 +4,9 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"path/filepath"
 )
 
 const (
@@ -76,4 +78,17 @@ func ErrRes(code int, message string) *ErrorResponse {
 			Message: message,
 		},
 	}
+}
+
+// InternalError contains information which can be used to trace and debug internal
+// server errors, which should not occur during normal operation.
+type InternalError struct {
+	File string
+	Line int
+	Err  error
+}
+
+// Error returns the string representation of an InternalError.
+func (e *InternalError) Error() string {
+	return fmt.Sprintf("%s:%d %s", filepath.Base(e.File), e.Line, e.Err.Error())
 }
