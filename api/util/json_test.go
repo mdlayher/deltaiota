@@ -27,7 +27,7 @@ func TestJSONAPIHandler(t *testing.T) {
 	// errFn returns HTTP Internal Server Error and an error
 	expErr := errors.New("a fake test error")
 	errFn := func(r *http.Request, vars Vars) (int, []byte, error) {
-		return http.StatusInternalServerError, nil, expErr
+		return JSONAPIErr(expErr)
 	}
 
 	// Table of test JSONAPIFunc and expected results
