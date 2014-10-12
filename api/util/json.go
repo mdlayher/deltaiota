@@ -1,8 +1,11 @@
 package util
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -24,7 +27,19 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 		// possible errors which occurred.
 		code, body, err := fn(r, mux.Vars(r))
 		if err != nil {
-			log.Printf("[%s: %s %s] %s", r.RemoteAddr, r.Method, r.URL.Path, err.Error())
+			// Generate string with request information
+			reqLog := fmt.Sprintf("[%s: %s %s]", r.RemoteAddr, r.Method, r.URL.Path)
+
+			// Check for internal error, with more debugging information
+			intErr, ok := err.(*InternalError)
+			if !ok {
+				// If not wrapped error, print basic information
+				log.Printf("%s %s", reqLog, err.Error())
+			} else {
+				// If wrapped error, print advanced information
+				// In the future, additional error hooks could be added here
+				log.Printf("%s internal error: [file: %s:%d, err: %s]", reqLog, filepath.Base(intErr.File), intErr.Line, intErr.Err)
+			}
 		}
 
 		// Write HTTP status code
@@ -44,9 +59,21 @@ func JSONAPIHandler(fn JSONAPIFunc) http.HandlerFunc {
 	})
 }
 
-// JSONAPIErr accepts an error and generates the appropriate JSONAPIFunc return
-// signature, for convenience and reduced code reptition.
+// JSONAPIErr accepts an internal error, wraps it in useful information for
+// debugging, and generates the appropriate JSONAPIFunc return signature,
+// for convenience and reduced code reptition.
 func JSONAPIErr(err error) (int, []byte, error) {
+	// Attempt to retrieve information about the calling function
+	if _, file, line, ok := runtime.Caller(1); ok {
+		// Wrap error with useful debugging information
+		err = &InternalError{
+			File: file,
+			Line: line,
+			Err:  err,
+		}
+	}
+
+	// Return HTTP code, body, and (wrapped, if possible) error
 	return Code[InternalServerError], JSON[InternalServerError], err
 }
 
