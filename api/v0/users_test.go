@@ -14,6 +14,66 @@ import (
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
+// TestUsersAPI verifies that UsersAPI correctly routes requests to
+// other Users API handlers, using the input HTTP request.
+func TestUsersAPI(t *testing.T) {
+	// Invoke tests with temporary database
+	err := ditest.WithTemporaryDB(func(db *data.DB) {
+		// Build context
+		c := &Context{
+			db: db,
+		}
+
+		var tests = []struct {
+			method string
+			vars   util.Vars
+			code   int
+		}{
+			// ListUsers
+			{"GET", util.Vars{}, http.StatusOK},
+			{"HEAD", util.Vars{}, http.StatusOK},
+			// GetUser
+			{"GET", util.Vars{"id": "1"}, http.StatusNotFound},
+			{"HEAD", util.Vars{"id": "1"}, http.StatusNotFound},
+			// PostUser
+			{"POST", util.Vars{}, http.StatusBadRequest},
+			// PutUser
+			{"PUT", util.Vars{}, http.StatusBadRequest},
+			// DeleteUser
+			{"DELETE", util.Vars{}, http.StatusBadRequest},
+			// Unknown method
+			{"CAT", util.Vars{}, http.StatusMethodNotAllowed},
+		}
+
+		for _, test := range tests {
+			// Generate HTTP request
+			r, err := http.NewRequest(test.method, "/", nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Delegate to appropriate handler
+			code, _, err := c.UsersAPI(r, test.vars)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Ensure proper HTTP status code
+			if code != test.code {
+				t.Errorf("unexpected code: %v != %v", code, test.code)
+				return
+			}
+		}
+	})
+
+	// Check for errors from database setup/cleanup
+	if err != nil {
+		t.Fatal("ditest.WithTemporaryDB:", err)
+	}
+}
+
 // TestListUsersNoUsers verifies that ListUsers returns no users when no
 // users exist in the database.
 func TestListUsersNoUsers(t *testing.T) {
