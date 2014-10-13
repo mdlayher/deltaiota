@@ -202,9 +202,23 @@ func (db *DB) withPreparedRows(query string, fn func(rows *Rows) error, args ...
 // sqlite3Setup performs setup routines specific to the sqlite3 database driver,
 // each time the database is initialized.
 func (db *DB) sqlite3Setup() error {
-	// Enforce foreign keys
-	if _, err := db.Exec("PRAGMA foreign_keys = ON;"); err != nil {
-		return err
+	// Slice of queries which will be executed, in-order, on startup
+	queries := []string{
+		// Enforce foreign keys
+		"PRAGMA foreign_keys = ON;",
+
+		// Do not wait for disk to be written to disk
+		"PRAGMA synchronous = OFF;",
+
+		// Keep rollback journal in memory
+		"PRAGMA journal_mode = MEMORY;",
+	}
+
+	// Execute startup queries in order
+	for _, q := range queries {
+		if _, err := db.Exec(q); err != nil {
+			return err
+		}
 	}
 
 	return nil
