@@ -274,6 +274,11 @@ func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 			return err
 		}
 
+		// Delete all notifications for user
+		if err := tx.DeleteNotificationsByUserID(user.ID); err != nil {
+			return err
+		}
+
 		// Delete user
 		return tx.DeleteUser(user)
 	})
