@@ -291,6 +291,11 @@ func (c *Context) DeleteUser(r *http.Request, vars util.Vars) (int, []byte, erro
 // On failure, it will return a message body or an error, causing the caller to
 // immediately send the result.
 func (c *Context) jsonToUser(r *http.Request) (*models.User, int, []byte, error) {
+	// Do not allow nil body
+	if r.Body == nil {
+		return nil, usersCode[userJSONSyntax], usersJSON[userJSONSyntax], nil
+	}
+
 	// Unmarshal body into a User
 	user := new(models.User)
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
