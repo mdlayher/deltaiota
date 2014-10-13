@@ -207,7 +207,7 @@ func (db *DB) sqlite3Setup() error {
 		// Enforce foreign keys
 		"PRAGMA foreign_keys = ON;",
 
-		// Do not wait for disk to be written to disk
+		// Do not wait for data to be written to disk
 		"PRAGMA synchronous = OFF;",
 
 		// Keep rollback journal in memory
