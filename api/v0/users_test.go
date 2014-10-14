@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
@@ -194,20 +195,7 @@ func TestListUsersManyUsers(t *testing.T) {
 // TestGetUser verifies that GetUser returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestGetUser(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate and store mock user
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
 		// Table of tests to iterate
 		var tests = []struct {
 			id         string
@@ -230,8 +218,7 @@ func TestGetUser(t *testing.T) {
 			// Generate HTTP request
 			r, err := http.NewRequest("GET", "/", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Set path variables, unless ID is missing
@@ -244,14 +231,12 @@ func TestGetUser(t *testing.T) {
 			// path variables from test
 			code, body, err := c.GetUser(r, vars)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Ensure proper HTTP status code
 			if code != test.code {
-				t.Errorf("unexpected code: %v != %v", code, test.code)
-				return
+				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
 
 			// If code is not HTTP OK, check error response
@@ -259,18 +244,15 @@ func TestGetUser(t *testing.T) {
 				// Unmarshal error JSON into struct
 				var errRes util.ErrorResponse
 				if err := json.Unmarshal(body, &errRes); err != nil {
-					t.Error(err)
-					return
+					return err
 				}
 
 				// Verify error code and message
 				if errRes.Error.Code != test.code {
-					t.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
-					return
+					return fmt.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
 				}
 				if errRes.Error.Message != test.errMessage {
-					t.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
-					return
+					return fmt.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
 				}
 
 				// Skip to next test
@@ -280,39 +262,34 @@ func TestGetUser(t *testing.T) {
 			// Unmarshal response body
 			var res UsersResponse
 			if err := json.Unmarshal(body, &res); err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Verify length of users slice
 			if len(res.Users) != 1 {
-				t.Errorf("unexpected number of users returned: %v", res.Users)
-				return
+				return fmt.Errorf("unexpected number of users returned: %v", res.Users)
 			}
 
 			// Verify user is the same as the mock we created earlier
 			if res.Users[0].Username != user.Username {
-				t.Errorf("unexpected User username: %v != %v", res.Users[0].Username, user.Username)
+				return fmt.Errorf("unexpected User username: %v != %v", res.Users[0].Username, user.Username)
 			}
 
 			if res.Users[0].FirstName != user.FirstName {
-				t.Errorf("unexpected User first name: %v != %v", res.Users[0].FirstName, user.FirstName)
+				return fmt.Errorf("unexpected User first name: %v != %v", res.Users[0].FirstName, user.FirstName)
 			}
 
 			if res.Users[0].LastName != user.LastName {
-				t.Errorf("unexpected User last name: %v != %v", res.Users[0].LastName, user.LastName)
+				return fmt.Errorf("unexpected User last name: %v != %v", res.Users[0].LastName, user.LastName)
 			}
 
 			if res.Users[0].Email != user.Email {
-				t.Errorf("unexpected User email: %v != %v", res.Users[0].Email, user.Email)
+				return fmt.Errorf("unexpected User email: %v != %v", res.Users[0].Email, user.Email)
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestPostUser verifies that PostUser returns the appropriate HTTP status
@@ -602,20 +579,7 @@ func TestPutUser(t *testing.T) {
 // TestDeleteUser verifies that DeleteUser returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestDeleteUser(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate and store mock user
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
 		// Table of tests to iterate
 		var tests = []struct {
 			id         string
@@ -638,8 +602,7 @@ func TestDeleteUser(t *testing.T) {
 			// Generate HTTP request
 			r, err := http.NewRequest("DELETE", "/", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Set path variables, unless ID is missing
@@ -652,21 +615,18 @@ func TestDeleteUser(t *testing.T) {
 			// path variables from test
 			code, body, err := c.DeleteUser(r, vars)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Ensure proper HTTP status code
 			if code != test.code {
-				t.Errorf("unexpected code: %v != %v", code, test.code)
-				return
+				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
 
 			// If code is HTTP No Content, ensure user was deleted
 			if code == http.StatusNoContent {
 				if _, err := c.db.SelectUserByID(user.ID); err != sql.ErrNoRows {
-					t.Errorf("called DeleteUser, but user still exists: %v", user)
-					return
+					return fmt.Errorf("called DeleteUser, but user still exists: %v", user)
 				}
 
 				continue
@@ -675,24 +635,18 @@ func TestDeleteUser(t *testing.T) {
 			// Unmarshal error JSON into struct
 			var errRes util.ErrorResponse
 			if err := json.Unmarshal(body, &errRes); err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Verify error code and message
 			if errRes.Error.Code != test.code {
-				t.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
-				return
+				return fmt.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
 			}
 			if errRes.Error.Message != test.errMessage {
-				t.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
-				return
+				return fmt.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
