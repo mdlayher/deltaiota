@@ -4,10 +4,7 @@ package ditest
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/mdlayher/deltaiota/bindata"
@@ -15,44 +12,32 @@ import (
 	"github.com/mdlayher/deltaiota/data/models"
 )
 
-// WithTemporaryDB generates a temporary copy of the embedded sqlite3 database from
-// bindata, invokes an input closure, and cleans up the temporary database once
-// the closure returns.
+// WithTemporaryDB generates a temporary, in-memory copy of the deltaiota sqlite3
+// database from bindata SQL schema, invokes an input closure, and destroys the
+// in-memory database once the closure returns.
 func WithTemporaryDB(fn func(db *data.DB)) error {
-	// Create temporary working directory in system temporary directory
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "ditest-")
+	// Retrieve sqlite3 database schema asset
+	asset, err := bindata.Asset("res/sqlite/deltaiota.sql")
 	if err != nil {
 		return err
 	}
 
-	// Retrieve sqlite3 database asset
-	asset, err := bindata.Asset("res/sqlite/deltaiota.db")
-	if err != nil {
-		return err
-	}
-
-	// Write sqlite3 database asset to temporary file
-	dbPath := filepath.Join(tmpDir, "ditest.db")
-	if err := ioutil.WriteFile(dbPath, asset, 0644); err != nil {
-		return err
-	}
-
-	// Open database connection
+	// Open in-memory database
 	didb := &data.DB{}
-	if err := didb.Open("sqlite3", dbPath); err != nil {
+	if err := didb.Open("sqlite3", ":memory:"); err != nil {
+		return err
+	}
+
+	// Execute schema to build database
+	if _, err := didb.Exec(string(asset)); err != nil {
 		return err
 	}
 
 	// Invoke input closure with database
 	fn(didb)
 
-	// Close database
-	if err := didb.Close(); err != nil {
-		return err
-	}
-
-	// Remove temporary directory and database
-	return os.RemoveAll(tmpDir)
+	// Close and destroy database
+	return didb.Close()
 }
 
 // MockUser generates a single User with mock data, used for testing.
