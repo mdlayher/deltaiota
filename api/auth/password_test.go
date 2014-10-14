@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 // users using the HTTP Basic Authorization header with a username and password pair.
 func Test_passwordAuthenticate(t *testing.T) {
 	// Establish temporary database for test
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
+	err := ditest.WithTemporaryDB(func(db *data.DB) error {
 		// Build context
 		ac := NewContext(db)
 
@@ -22,14 +23,12 @@ func Test_passwordAuthenticate(t *testing.T) {
 		// Set a known password for tests
 		password := "test"
 		if err := user.SetPassword(password); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Store user in temporary database
 		if err := ac.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		var tests = []struct {
@@ -53,8 +52,7 @@ func Test_passwordAuthenticate(t *testing.T) {
 			// Create mock HTTP request
 			req, err := http.NewRequest("POST", "/", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Set credentials for HTTP Basic
@@ -65,16 +63,16 @@ func Test_passwordAuthenticate(t *testing.T) {
 
 			// Fail tests on any server error
 			if sErr != nil {
-				t.Error(err)
-				return
+				return sErr
 			}
 
 			// Check for expected client error
 			if cErr != test.err {
-				t.Errorf("unexpected err: %v != %v", cErr, test.err)
-				return
+				return fmt.Errorf("unexpected err: %v != %v", cErr, test.err)
 			}
 		}
+
+		return nil
 	})
 
 	if err != nil {

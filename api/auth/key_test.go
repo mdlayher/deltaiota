@@ -2,6 +2,7 @@ package auth
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -15,48 +16,42 @@ import (
 // session key pair.
 func Test_keyAuthenticate(t *testing.T) {
 	// Establish temporary database for test
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
+	err := ditest.WithTemporaryDB(func(db *data.DB) error {
 		// Build context
 		ac := NewContext(db)
 
 		// Create and store mock user in temporary database
 		user := ditest.MockUser()
 		if err := ac.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Create and store mock user without sessions in temporary database
 		user2 := ditest.MockUser()
 		if err := ac.db.InsertUser(user2); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Generate a session for first user
 		session, err := user.NewSession(time.Now().Add(1 * time.Minute))
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Store session in temporary database
 		if err := ac.db.InsertSession(session); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Generate an expired session for first user
 		expSession, err := user.NewSession(time.Now().Add(-1 * time.Minute))
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Store session in temporary database
 		if err := ac.db.InsertSession(expSession); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		var tests = []struct {
@@ -84,8 +79,7 @@ func Test_keyAuthenticate(t *testing.T) {
 			// Create mock HTTP request
 			req, err := http.NewRequest("POST", "/", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Set credentials for HTTP Basic
@@ -96,22 +90,21 @@ func Test_keyAuthenticate(t *testing.T) {
 
 			// Fail tests on any server error
 			if sErr != nil {
-				t.Error(err)
-				return
+				return sErr
 			}
 
 			// Check for expected client error
 			if cErr != test.err {
-				t.Errorf("unexpected err: %v != %v", cErr, test.err)
-				return
+				return fmt.Errorf("unexpected err: %v != %v", cErr, test.err)
 			}
 		}
 
 		// Ensure expired session was deleted
 		if _, err := ac.db.SelectSessionByKey(expSession.Key); err != sql.ErrNoRows {
-			t.Error("session expired, but still in database")
-			return
+			return fmt.Errorf("session expired, but still in database")
 		}
+
+		return nil
 	})
 
 	if err != nil {
