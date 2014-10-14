@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/mdlayher/deltaiota/data"
+	"github.com/mdlayher/deltaiota/data/models"
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
@@ -58,6 +59,36 @@ func TestNewServeMux(t *testing.T) {
 	})
 
 	// Fail on errors from database setup/cleanup
+	if err != nil {
+		t.Fatal("ditest.WithTemporaryDB:", err)
+	}
+}
+
+// withDBContextUser sets up a test context with a temporary database, API
+// context, and mock user.
+func withDBContextUser(t *testing.T, fn func(db *data.DB, c *Context, user *models.User) error) {
+	// Invoke tests with temporary database
+	err := ditest.WithTemporaryDB(func(db *data.DB) {
+		// Build context
+		c := &Context{
+			db: db,
+		}
+
+		// Generate mock user
+		user := ditest.MockUser()
+		if err := c.db.InsertUser(user); err != nil {
+			t.Error(err)
+			return
+		}
+
+		// Invoke test
+		if err := fn(db, c, user); err != nil {
+			t.Error(err)
+			return
+		}
+	})
+
+	// Check for errors from database setup/cleanup
 	if err != nil {
 		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
