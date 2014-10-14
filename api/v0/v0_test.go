@@ -64,9 +64,9 @@ func TestNewServeMux(t *testing.T) {
 	}
 }
 
-// withContextUser sets up a test context with an API context wrapping a
-// temporary database, and mock user.
-func withContextUser(t *testing.T, fn func(c *Context, user *models.User) error) {
+// withContext sets up a test context with an API context wrapping a
+// temporary database.
+func withContext(t *testing.T, fn func(c *Context) error) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
@@ -74,15 +74,8 @@ func withContextUser(t *testing.T, fn func(c *Context, user *models.User) error)
 			db: db,
 		}
 
-		// Generate mock user
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
 		// Invoke test
-		if err := fn(c, user); err != nil {
+		if err := fn(c); err != nil {
 			t.Error(err)
 			return
 		}
@@ -92,4 +85,18 @@ func withContextUser(t *testing.T, fn func(c *Context, user *models.User) error)
 	if err != nil {
 		t.Fatal("ditest.WithTemporaryDB:", err)
 	}
+}
+
+// withContextUser builds upon withContext, adding a mock user.
+func withContextUser(t *testing.T, fn func(c *Context, user *models.User) error) {
+	withContext(t, func(c *Context) error {
+		// Generate mock user
+		user := ditest.MockUser()
+		if err := c.db.InsertUser(user); err != nil {
+			return err
+		}
+
+		// Invoke test
+		return fn(c, user)
+	})
 }
