@@ -12,6 +12,70 @@ import (
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
+// TestNotificationsAPI verifies that NotificationsAPI correctly routes requests to
+// other Notifications API handlers, using the input HTTP request.
+func TestNotificationsAPI(t *testing.T) {
+	// Invoke tests with temporary database
+	err := ditest.WithTemporaryDB(func(db *data.DB) {
+		// Build context
+		c := &Context{
+			db: db,
+		}
+
+		// Generate mock user
+		user := ditest.MockUser()
+		if err := c.db.InsertUser(user); err != nil {
+			t.Error(err)
+			return
+		}
+
+		var tests = []struct {
+			method string
+			code   int
+		}{
+			// ListNotificationsForUser
+			{"GET", http.StatusOK},
+			{"HEAD", http.StatusOK},
+			// Method not allowed
+			{"POST", http.StatusMethodNotAllowed},
+			{"PUT", http.StatusMethodNotAllowed},
+			{"PATCH", http.StatusMethodNotAllowed},
+			{"DELETE", http.StatusMethodNotAllowed},
+			{"CAT", http.StatusMethodNotAllowed},
+		}
+
+		for _, test := range tests {
+			// Generate HTTP request
+			r, err := http.NewRequest(test.method, "/", nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Store mock-authenticated user
+			auth.SetUser(r, user)
+
+			// Delegate to appropriate handler
+			code, _, err := c.NotificationsAPI(r, util.Vars{})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Ensure proper HTTP status code
+			if code != test.code {
+				t.Errorf("unexpected code: %v != %v", code, test.code)
+				return
+			}
+		}
+	})
+
+	// Check for errors from database setup/cleanup
+	if err != nil {
+		t.Fatal("ditest.WithTemporaryDB:", err)
+	}
+}
+
 // TestListNotificationsForUserNoNotifications verifies that ListNotificationsForUser
 // returns no notifications when no notifications exist for a user in the database.
 func TestListNotificationsForUserNoNotifications(t *testing.T) {

@@ -34,7 +34,7 @@ func NewServeMux(db *data.DB) http.Handler {
 	// Set up HTTP routes
 
 	// Notifications API
-	r.Handle("/notifications", ac.KeyAuthHandler(util.JSONAPIHandler(c.ListNotificationsForUser))).Methods("GET")
+	r.Handle("/notifications", ac.KeyAuthHandler(util.JSONAPIHandler(c.NotificationsAPI)))
 
 	// Sessions API
 	r.Handle("/sessions", ac.PasswordAuthHandler(util.JSONAPIHandler(c.PostSession))).Methods("POST")
