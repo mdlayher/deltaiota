@@ -15,7 +15,7 @@ import (
 // TestNewServeMux verifies that NewServeMux properly sets up API v0.
 func TestNewServeMux(t *testing.T) {
 	// Set up temporary database for test
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
+	err := ditest.WithTemporaryDB(func(db *data.DB) error {
 		// Set up HTTP test server
 		srv := httptest.NewServer(NewServeMux(db))
 		defer srv.Close()
@@ -42,20 +42,22 @@ func TestNewServeMux(t *testing.T) {
 			// Generate HTTP request
 			req, err := http.NewRequest(test.method, test.path, bytes.NewReader(test.body))
 			if err != nil {
-				t.Error(err)
+				return err
 			}
 
 			// Receive HTTP response
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
-				t.Error(err)
+				return err
 			}
 
 			// Check for expected status code
 			if res.StatusCode != test.code {
-				t.Errorf("%s: unexpected code: %v != %v", logPrefix, res.StatusCode, test.code)
+				return fmt.Errorf("%s: unexpected code: %v != %v", logPrefix, res.StatusCode, test.code)
 			}
 		}
+
+		return nil
 	})
 
 	// Fail on errors from database setup/cleanup
@@ -68,17 +70,14 @@ func TestNewServeMux(t *testing.T) {
 // temporary database.
 func withContext(t *testing.T, fn func(c *Context) error) {
 	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
+	err := ditest.WithTemporaryDB(func(db *data.DB) error {
 		// Build context
 		c := &Context{
 			db: db,
 		}
 
 		// Invoke test
-		if err := fn(c); err != nil {
-			t.Error(err)
-			return
-		}
+		return fn(c)
 	})
 
 	// Check for errors from database setup/cleanup

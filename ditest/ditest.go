@@ -15,7 +15,7 @@ import (
 // WithTemporaryDB generates a temporary, in-memory copy of the deltaiota sqlite3
 // database from bindata SQL schema, invokes an input closure, and destroys the
 // in-memory database once the closure returns.
-func WithTemporaryDB(fn func(db *data.DB)) error {
+func WithTemporaryDB(fn func(db *data.DB) error) error {
 	// Retrieve sqlite3 database schema asset
 	asset, err := bindata.Asset("res/sqlite/deltaiota.sql")
 	if err != nil {
@@ -34,10 +34,15 @@ func WithTemporaryDB(fn func(db *data.DB)) error {
 	}
 
 	// Invoke input closure with database
-	fn(didb)
+	fnErr := fn(didb)
 
 	// Close and destroy database
-	return didb.Close()
+	if err := didb.Close(); err != nil {
+		return err
+	}
+
+	// Return error from closure
+	return fnErr
 }
 
 // MockUser generates a single User with mock data, used for testing.
