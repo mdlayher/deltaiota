@@ -2,6 +2,7 @@ package v0
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -15,20 +16,7 @@ import (
 // TestNotificationsAPI verifies that NotificationsAPI correctly routes requests to
 // other Notifications API handlers, using the input HTTP request.
 func TestNotificationsAPI(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate mock user
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
 		var tests = []struct {
 			method string
 			code   int
@@ -48,8 +36,7 @@ func TestNotificationsAPI(t *testing.T) {
 			// Generate HTTP request
 			r, err := http.NewRequest(test.method, "/", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Store mock-authenticated user
@@ -58,45 +45,27 @@ func TestNotificationsAPI(t *testing.T) {
 			// Delegate to appropriate handler
 			code, _, err := c.NotificationsAPI(r, util.Vars{})
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Ensure proper HTTP status code
 			if code != test.code {
-				t.Errorf("unexpected code: %v != %v", code, test.code)
-				return
+				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestListNotificationsForUserNoNotifications verifies that ListNotificationsForUser
 // returns no notifications when no notifications exist for a user in the database.
 func TestListNotificationsForUserNoNotifications(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate mock users
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+		// Generate another mock user
 		user2 := ditest.MockUser()
 		if err := c.db.InsertUser(user2); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Add notification for second user, which should not
@@ -104,15 +73,13 @@ func TestListNotificationsForUserNoNotifications(t *testing.T) {
 		if err := c.db.InsertNotification(&models.Notification{
 			UserID: user2.ID,
 		}); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Generate HTTP request
 		r, err := http.NewRequest("GET", "/", nil)
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Store mock-authenticated user
@@ -121,57 +88,37 @@ func TestListNotificationsForUserNoNotifications(t *testing.T) {
 		// Fetch list of current notifications for user
 		code, body, err := c.ListNotificationsForUser(r, util.Vars{})
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Ensure proper HTTP status code
 		if code != http.StatusOK {
-			t.Errorf("unexpected code: %v != %v", code, http.StatusOK)
-			return
+			return fmt.Errorf("unexpected code: %v != %v", code, http.StatusOK)
 		}
 
 		// Unmarshal response body
 		var res NotificationsResponse
 		if err := json.Unmarshal(body, &res); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Verify length of notifications slice
 		if len(res.Notifications) != 0 {
-			t.Errorf("notifications slice not empty: %v", res.Notifications)
-			return
+			return fmt.Errorf("notifications slice not empty: %v", res.Notifications)
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestListNotificationsForUserManyNotifications verifies that ListNotificationsForUser
 // returns many notifications when many notifications for the user exist in the database.
 func TestListNotificationsManyNotifications(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate mock users
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+		// Generate another mock user
 		user2 := ditest.MockUser()
 		if err := c.db.InsertUser(user2); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Add notification for second user, which should not
@@ -179,15 +126,13 @@ func TestListNotificationsManyNotifications(t *testing.T) {
 		if err := c.db.InsertNotification(&models.Notification{
 			UserID: user2.ID,
 		}); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Generate HTTP request
 		r, err := http.NewRequest("GET", "/", nil)
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Store mock-authenticated user
@@ -200,8 +145,7 @@ func TestListNotificationsManyNotifications(t *testing.T) {
 				UserID: user.ID,
 			}
 			if err := c.db.InsertNotification(notification); err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			notifications[i] = notification
@@ -210,40 +154,33 @@ func TestListNotificationsManyNotifications(t *testing.T) {
 		// Fetch list of current notifications for user
 		code, body, err := c.ListNotificationsForUser(r, util.Vars{})
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Ensure proper HTTP status code
 		if code != http.StatusOK {
-			t.Errorf("unexpected code: %v != %v", code, http.StatusOK)
-			return
+			return fmt.Errorf("unexpected code: %v != %v", code, http.StatusOK)
 		}
 
 		// Unmarshal response body
 		var res NotificationsResponse
 		if err := json.Unmarshal(body, &res); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Check length of response slice
 		if len(notifications) != len(res.Notifications) {
-			t.Errorf("unexpected Notifications slice length: %v != %v", len(notifications), len(res.Notifications))
-			return
+			return fmt.Errorf("unexpected Notifications slice length: %v != %v", len(notifications), len(res.Notifications))
 		}
 
 		// Check if all generated notifications returned, verify
 		// they belong to the same user
 		for i := range res.Notifications {
 			if res.Notifications[i].UserID != notifications[i].UserID {
-				t.Errorf("unexpected Notification UserID: %v != %v", res.Notifications[i].UserID, notifications[i].UserID)
+				return fmt.Errorf("unexpected Notification UserID: %v != %v", res.Notifications[i].UserID, notifications[i].UserID)
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
