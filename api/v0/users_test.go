@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/mdlayher/deltaiota/api/util"
-	"github.com/mdlayher/deltaiota/data"
 	"github.com/mdlayher/deltaiota/data/models"
 	"github.com/mdlayher/deltaiota/ditest"
 )
@@ -18,13 +17,7 @@ import (
 // TestUsersAPI verifies that UsersAPI correctly routes requests to
 // other Users API handlers, using the input HTTP request.
 func TestUsersAPI(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
+	withContext(t, func(c *Context) error {
 		var tests = []struct {
 			method string
 			vars   util.Vars
@@ -50,91 +43,65 @@ func TestUsersAPI(t *testing.T) {
 			// Generate HTTP request
 			r, err := http.NewRequest(test.method, "/", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Delegate to appropriate handler
 			code, _, err := c.UsersAPI(r, test.vars)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Ensure proper HTTP status code
 			if code != test.code {
-				t.Errorf("unexpected code: %v != %v", code, test.code)
-				return
+				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestListUsersNoUsers verifies that ListUsers returns no users when no
 // users exist in the database.
 func TestListUsersNoUsers(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
+	withContext(t, func(c *Context) error {
 		// Fetch list of current users
 		code, body, err := c.ListUsers(nil, util.Vars{})
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Ensure proper HTTP status code
 		if code != http.StatusOK {
-			t.Errorf("unexpected code: %v != %v", code, http.StatusOK)
-			return
+			return fmt.Errorf("unexpected code: %v != %v", code, http.StatusOK)
 		}
 
 		// Unmarshal response body
 		var res UsersResponse
 		if err := json.Unmarshal(body, &res); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Verify length of users slice
 		if len(res.Users) != 0 {
-			t.Errorf("users slice not empty: %v", res.Users)
-			return
+			return fmt.Errorf("users slice not empty: %v", res.Users)
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestListUserManyUsers verifies that ListUsers returns many users when many users
 // users exist in the database.
 func TestListUsersManyUsers(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
+	withContext(t, func(c *Context) error {
 		// Generate and save a mock users in the database
 		users := make([]*models.User, 100)
 		for i := range users {
 			user := ditest.MockUser()
 			if err := c.db.InsertUser(user); err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			users[i] = user
@@ -143,53 +110,46 @@ func TestListUsersManyUsers(t *testing.T) {
 		// Fetch list of current users
 		code, body, err := c.ListUsers(nil, util.Vars{})
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Ensure proper HTTP status code
 		if code != http.StatusOK {
-			t.Errorf("unexpected code: %v != %v", code, http.StatusOK)
-			return
+			return fmt.Errorf("unexpected code: %v != %v", code, http.StatusOK)
 		}
 
 		// Unmarshal response body
 		var res UsersResponse
 		if err := json.Unmarshal(body, &res); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Check length of response slice
 		if len(users) != len(res.Users) {
-			t.Errorf("unexpected Users slice length: %v != %v", len(users), len(res.Users))
-			return
+			return fmt.Errorf("unexpected Users slice length: %v != %v", len(users), len(res.Users))
 		}
 
 		// Check if all generated users returned
 		for i := range res.Users {
 			if res.Users[i].Username != users[i].Username {
-				t.Errorf("unexpected User username: %v != %v", res.Users[i].Username, users[i].Username)
+				return fmt.Errorf("unexpected User username: %v != %v", res.Users[i].Username, users[i].Username)
 			}
 
 			if res.Users[i].FirstName != users[i].FirstName {
-				t.Errorf("unexpected User first name: %v != %v", res.Users[i].FirstName, users[i].FirstName)
+				return fmt.Errorf("unexpected User first name: %v != %v", res.Users[i].FirstName, users[i].FirstName)
 			}
 
 			if res.Users[i].LastName != users[i].LastName {
-				t.Errorf("unexpected User last name: %v != %v", res.Users[i].LastName, users[i].LastName)
+				return fmt.Errorf("unexpected User last name: %v != %v", res.Users[i].LastName, users[i].LastName)
 			}
 
 			if res.Users[i].Email != users[i].Email {
-				t.Errorf("unexpected User email: %v != %v", res.Users[i].Email, users[i].Email)
+				return fmt.Errorf("unexpected User email: %v != %v", res.Users[i].Email, users[i].Email)
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestGetUser verifies that GetUser returns the appropriate HTTP status
@@ -295,21 +255,14 @@ func TestGetUser(t *testing.T) {
 // TestPostUser verifies that PostUser returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestPostUser(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
+	withContext(t, func(c *Context) error {
 		// JSON used to generate a temporary user
 		mockUserJSON := []byte(`{"id": 1, "password":"test","firstName":"test","lastName":"test","username":"test","email":"test@test.com"}`)
 
 		// Unmarshal into mock user
 		user := new(models.User)
 		if err := json.Unmarshal(mockUserJSON, user); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Table of tests to iterate
@@ -349,21 +302,18 @@ func TestPostUser(t *testing.T) {
 			// Generate HTTP request
 			r, err := http.NewRequest("POST", "/", bytes.NewReader(test.body))
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Invoke PostUser with HTTP request
 			code, body, err := c.PostUser(r, util.Vars{})
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Ensure proper HTTP status code
 			if code != test.code {
-				t.Errorf("unexpected code: %v != %v", code, test.code)
-				return
+				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
 
 			// If code is in HTTP 400 or above, check error response
@@ -371,18 +321,15 @@ func TestPostUser(t *testing.T) {
 				// Unmarshal error JSON into struct
 				var errRes util.ErrorResponse
 				if err := json.Unmarshal(body, &errRes); err != nil {
-					t.Error(err)
-					return
+					return err
 				}
 
 				// Verify error code and message
 				if errRes.Error.Code != test.code {
-					t.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
-					return
+					return fmt.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
 				}
 				if errRes.Error.Message != test.errMessage {
-					t.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
-					return
+					return fmt.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
 				}
 
 				// Skip to next test
@@ -392,14 +339,12 @@ func TestPostUser(t *testing.T) {
 			// Unmarshal response body
 			var res UsersResponse
 			if err := json.Unmarshal(body, &res); err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Verify length of users slice
 			if len(res.Users) != 1 {
-				t.Errorf("unexpected number of users returned: %v", res.Users)
-				return
+				return fmt.Errorf("unexpected number of users returned: %v", res.Users)
 			}
 
 			// Strip password for comparison
@@ -407,41 +352,30 @@ func TestPostUser(t *testing.T) {
 
 			// Verify user is the same as the mock we created earlier
 			if !reflect.DeepEqual(user, res.Users[0]) {
-				t.Errorf("unexpected user: %v != %v", user, res.Users[0])
+				return fmt.Errorf("unexpected user: %v != %v", user, res.Users[0])
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestPutUser verifies that PutUser returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestPutUser(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
+	withContext(t, func(c *Context) error {
 		// JSON used to generate a temporary user
 		mockUserJSON := []byte(`{"id": 1, "password":"test","firstName":"test","lastName":"test","username":"test","email":"test@test.com"}`)
 
 		// Unmarshal into mock user
 		user := new(models.User)
 		if err := json.Unmarshal(mockUserJSON, user); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Save user in database, to be updated later
 		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Save user in database for conflicting username and email
@@ -451,8 +385,7 @@ func TestPutUser(t *testing.T) {
 		}
 		conflictUser.SetPassword("conflict")
 		if err := c.db.InsertUser(conflictUser); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Table of tests to iterate
@@ -500,8 +433,7 @@ func TestPutUser(t *testing.T) {
 			// Generate HTTP request
 			r, err := http.NewRequest("PUT", "/", bytes.NewReader(test.body))
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Set path variables, unless ID is missing
@@ -514,14 +446,12 @@ func TestPutUser(t *testing.T) {
 			// path variables from test
 			code, body, err := c.PutUser(r, vars)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Ensure proper HTTP status code
 			if code != test.code {
-				t.Errorf("unexpected code: %v != %v", code, test.code)
-				return
+				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
 
 			// If code is in HTTP 400 or above, check error response
@@ -529,18 +459,15 @@ func TestPutUser(t *testing.T) {
 				// Unmarshal error JSON into struct
 				var errRes util.ErrorResponse
 				if err := json.Unmarshal(body, &errRes); err != nil {
-					t.Error(err)
-					return
+					return err
 				}
 
 				// Verify error code and message
 				if errRes.Error.Code != test.code {
-					t.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
-					return
+					return fmt.Errorf("unexpected error code: %v != %v", errRes.Error.Code, test.code)
 				}
 				if errRes.Error.Message != test.errMessage {
-					t.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
-					return
+					return fmt.Errorf("unexpected error message: %v != %v", errRes.Error.Message, test.errMessage)
 				}
 
 				// Skip to next test
@@ -550,14 +477,12 @@ func TestPutUser(t *testing.T) {
 			// Unmarshal response body
 			var res UsersResponse
 			if err := json.Unmarshal(body, &res); err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Verify length of users slice
 			if len(res.Users) != 1 {
-				t.Errorf("unexpected number of users returned: %v", res.Users)
-				return
+				return fmt.Errorf("unexpected number of users returned: %v", res.Users)
 			}
 
 			// Strip password for comparison
@@ -565,15 +490,12 @@ func TestPutUser(t *testing.T) {
 
 			// Verify user is the same as the mock we created earlier
 			if !reflect.DeepEqual(user, res.Users[0]) {
-				t.Errorf("unexpected user: %v != %v", user, res.Users[0])
+				return fmt.Errorf("unexpected user: %v != %v", user, res.Users[0])
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestDeleteUser verifies that DeleteUser returns the appropriate HTTP status
