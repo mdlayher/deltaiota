@@ -64,9 +64,9 @@ func TestNewServeMux(t *testing.T) {
 	}
 }
 
-// withDBContextUser sets up a test context with a temporary database, API
-// context, and mock user.
-func withDBContextUser(t *testing.T, fn func(db *data.DB, c *Context, user *models.User) error) {
+// withContextUser sets up a test context with an API context wrapping a
+// temporary database, and mock user.
+func withContextUser(t *testing.T, fn func(c *Context, user *models.User) error) {
 	// Invoke tests with temporary database
 	err := ditest.WithTemporaryDB(func(db *data.DB) {
 		// Build context
@@ -82,7 +82,7 @@ func withDBContextUser(t *testing.T, fn func(db *data.DB, c *Context, user *mode
 		}
 
 		// Invoke test
-		if err := fn(db, c, user); err != nil {
+		if err := fn(c, user); err != nil {
 			t.Error(err)
 			return
 		}

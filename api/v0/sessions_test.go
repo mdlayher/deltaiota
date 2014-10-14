@@ -10,7 +10,6 @@ import (
 
 	"github.com/mdlayher/deltaiota/api/auth"
 	"github.com/mdlayher/deltaiota/api/util"
-	"github.com/mdlayher/deltaiota/data"
 	"github.com/mdlayher/deltaiota/data/models"
 	"github.com/mdlayher/deltaiota/ditest"
 )
@@ -18,7 +17,7 @@ import (
 // TestSessionsAPI verifies that SessionsAPI correctly routes requests to
 // other Sessions API handlers, using the input HTTP request.
 func TestSessionsAPI(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		// Generate and store mock session
 		session := &models.Session{
 			UserID: user.ID,
@@ -75,7 +74,7 @@ func TestSessionsAPI(t *testing.T) {
 // TestPostSession verifies that PostSession returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestPostSession(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		// Generate HTTP request
 		r, err := http.NewRequest("POST", "/", nil)
 		if err != nil {
@@ -114,7 +113,7 @@ func TestPostSession(t *testing.T) {
 // TestDeleteSession verifies that DeleteSession returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestDeleteSession(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		// Generate and store mock session
 		session := &models.Session{
 			UserID: user.ID,

@@ -8,7 +8,6 @@ import (
 
 	"github.com/mdlayher/deltaiota/api/auth"
 	"github.com/mdlayher/deltaiota/api/util"
-	"github.com/mdlayher/deltaiota/data"
 	"github.com/mdlayher/deltaiota/data/models"
 	"github.com/mdlayher/deltaiota/ditest"
 )
@@ -16,7 +15,7 @@ import (
 // TestNotificationsAPI verifies that NotificationsAPI correctly routes requests to
 // other Notifications API handlers, using the input HTTP request.
 func TestNotificationsAPI(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		var tests = []struct {
 			method string
 			code   int
@@ -61,7 +60,7 @@ func TestNotificationsAPI(t *testing.T) {
 // TestListNotificationsForUserNoNotifications verifies that ListNotificationsForUser
 // returns no notifications when no notifications exist for a user in the database.
 func TestListNotificationsForUserNoNotifications(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		// Generate another mock user
 		user2 := ditest.MockUser()
 		if err := c.db.InsertUser(user2); err != nil {
@@ -114,7 +113,7 @@ func TestListNotificationsForUserNoNotifications(t *testing.T) {
 // TestListNotificationsForUserManyNotifications verifies that ListNotificationsForUser
 // returns many notifications when many notifications for the user exist in the database.
 func TestListNotificationsManyNotifications(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		// Generate another mock user
 		user2 := ditest.MockUser()
 		if err := c.db.InsertUser(user2); err != nil {

@@ -195,7 +195,7 @@ func TestListUsersManyUsers(t *testing.T) {
 // TestGetUser verifies that GetUser returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestGetUser(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		// Table of tests to iterate
 		var tests = []struct {
 			id         string
@@ -579,7 +579,7 @@ func TestPutUser(t *testing.T) {
 // TestDeleteUser verifies that DeleteUser returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestDeleteUser(t *testing.T) {
-	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
+	withContextUser(t, func(c *Context, user *models.User) error {
 		// Table of tests to iterate
 		var tests = []struct {
 			id         string
