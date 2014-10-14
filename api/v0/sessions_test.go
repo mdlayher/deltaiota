@@ -3,6 +3,7 @@ package v0
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -17,20 +18,7 @@ import (
 // TestSessionsAPI verifies that SessionsAPI correctly routes requests to
 // other Sessions API handlers, using the input HTTP request.
 func TestSessionsAPI(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate and store mock user
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
 		// Generate and store mock session
 		session := &models.Session{
 			UserID: user.ID,
@@ -38,8 +26,7 @@ func TestSessionsAPI(t *testing.T) {
 			Expire: uint64(time.Now().Unix()),
 		}
 		if err := c.db.InsertSession(session); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		var tests = []struct {
@@ -63,8 +50,7 @@ func TestSessionsAPI(t *testing.T) {
 			// Generate HTTP request
 			r, err := http.NewRequest(test.method, "/", nil)
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Store mock-authenticated session
@@ -73,46 +59,27 @@ func TestSessionsAPI(t *testing.T) {
 			// Delegate to appropriate handler
 			code, _, err := c.SessionsAPI(r, util.Vars{})
 			if err != nil {
-				t.Error(err)
-				return
+				return err
 			}
 
 			// Ensure proper HTTP status code
 			if code != test.code {
-				t.Errorf("unexpected code: %v != %v", code, test.code)
-				return
+				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestPostSession verifies that PostSession returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestPostSession(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate and store mock user
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
 		// Generate HTTP request
 		r, err := http.NewRequest("POST", "/", nil)
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Store mock-authenticated user
@@ -121,53 +88,33 @@ func TestPostSession(t *testing.T) {
 		// Invoke PostSession with HTTP request
 		code, body, err := c.PostSession(r, util.Vars{})
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Ensure proper HTTP status code
 		if code != http.StatusOK {
-			t.Error("expected HTTP OK, got code:", code)
-			return
+			return fmt.Errorf("expected HTTP OK, got code: %v", code)
 		}
 
 		// Unmarshal response body
 		var res SessionsResponse
 		if err := json.Unmarshal(body, &res); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Verify session belongs to this user
 		if res.Session.UserID != user.ID {
-			t.Errorf("unexpected user ID: %v != %v", res.Session.UserID, user.ID)
-			return
+			return fmt.Errorf("unexpected user ID: %v != %v", res.Session.UserID, user.ID)
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
 
 // TestDeleteSession verifies that DeleteSession returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestDeleteSession(t *testing.T) {
-	// Invoke tests with temporary database
-	err := ditest.WithTemporaryDB(func(db *data.DB) {
-		// Build context
-		c := &Context{
-			db: db,
-		}
-
-		// Generate and store mock user
-		user := ditest.MockUser()
-		if err := c.db.InsertUser(user); err != nil {
-			t.Error(err)
-			return
-		}
-
+	withDBContextUser(t, func(db *data.DB, c *Context, user *models.User) error {
 		// Generate and store mock session
 		session := &models.Session{
 			UserID: user.ID,
@@ -175,15 +122,13 @@ func TestDeleteSession(t *testing.T) {
 			Expire: uint64(time.Now().Unix()),
 		}
 		if err := c.db.InsertSession(session); err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Generate HTTP request
 		r, err := http.NewRequest("DELETE", "/", nil)
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Store mock-authenticated session
@@ -192,25 +137,19 @@ func TestDeleteSession(t *testing.T) {
 		// Invoke DeleteSession with HTTP request
 		code, _, err := c.DeleteSession(r, util.Vars{})
 		if err != nil {
-			t.Error(err)
-			return
+			return err
 		}
 
 		// Ensure proper HTTP status code
 		if code != http.StatusNoContent {
-			t.Error("expected HTTP OK, got code:", code)
-			return
+			return fmt.Errorf("expected HTTP OK, got code: %v", code)
 		}
 
 		// Ensure session was deleted
 		if _, err := c.db.SelectSessionByKey(session.Key); err != sql.ErrNoRows {
-			t.Errorf("called DeleteSession, but session still exists: %v", session)
-			return
+			return fmt.Errorf("called DeleteSession, but session still exists: %v", session)
 		}
-	})
 
-	// Check for errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
+		return nil
+	})
 }
