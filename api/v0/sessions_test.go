@@ -14,6 +14,83 @@ import (
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
+// TestSessionsAPI verifies that SessionsAPI correctly routes requests to
+// other Sessions API handlers, using the input HTTP request.
+func TestSessionsAPI(t *testing.T) {
+	// Invoke tests with temporary database
+	err := ditest.WithTemporaryDB(func(db *data.DB) {
+		// Build context
+		c := &Context{
+			db: db,
+		}
+
+		// Generate and store mock user
+		user := ditest.MockUser()
+		if err := c.db.InsertUser(user); err != nil {
+			t.Error(err)
+			return
+		}
+
+		// Generate and store mock session
+		session := &models.Session{
+			UserID: user.ID,
+			Key:    ditest.RandomString(32),
+			Expire: uint64(time.Now().Unix()),
+		}
+		if err := c.db.InsertSession(session); err != nil {
+			t.Error(err)
+			return
+		}
+
+		var tests = []struct {
+			method string
+			code   int
+		}{
+			// DeleteSession
+			{"DELETE", http.StatusNoContent},
+			// Method not allowed
+			{"GET", http.StatusMethodNotAllowed},
+			{"HEAD", http.StatusMethodNotAllowed},
+			{"PUT", http.StatusMethodNotAllowed},
+			{"PATCH", http.StatusMethodNotAllowed},
+			{"CAT", http.StatusMethodNotAllowed},
+			// Method not allowed from the UsersAPI call as a safety mechanism,
+			// even though it is valid with password authentication.
+			{"POST", http.StatusMethodNotAllowed},
+		}
+
+		for _, test := range tests {
+			// Generate HTTP request
+			r, err := http.NewRequest(test.method, "/", nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Store mock-authenticated session
+			auth.SetSession(r, session)
+
+			// Delegate to appropriate handler
+			code, _, err := c.SessionsAPI(r, util.Vars{})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			// Ensure proper HTTP status code
+			if code != test.code {
+				t.Errorf("unexpected code: %v != %v", code, test.code)
+				return
+			}
+		}
+	})
+
+	// Check for errors from database setup/cleanup
+	if err != nil {
+		t.Fatal("ditest.WithTemporaryDB:", err)
+	}
+}
+
 // TestPostSession verifies that PostSession returns the appropriate HTTP status
 // code, body, and any errors which occur.
 func TestPostSession(t *testing.T) {

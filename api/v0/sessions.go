@@ -15,6 +15,20 @@ type SessionsResponse struct {
 	Session *models.Session `json:"session"`
 }
 
+// SessionsAPI is a util.JSONAPIFunc, and is the single entry point for all non-POST
+// methods for the Sessions API.  The POST endpoint is separate due to using password
+// authentication, rather than key authentication.
+// This method delegates to other methods as appropriate to handle incoming requests.
+func (c *Context) SessionsAPI(r *http.Request, vars util.Vars) (int, []byte, error) {
+	// Switch based on HTTP method
+	switch r.Method {
+	case "DELETE":
+		return c.DeleteSession(r, vars)
+	default:
+		return util.MethodNotAllowed(r, vars)
+	}
+}
+
 // PostSession is a util.JSONAPIFunc which creates a new Session and returns HTTP 200
 // and a JSON session object on success, or a non-200 HTTP status code and an
 // error response on failure.
