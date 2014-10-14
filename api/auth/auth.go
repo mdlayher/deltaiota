@@ -1,3 +1,5 @@
+// Package auth provides HTTP API authentication handlers for the Phi Mu Alpha
+// Sinfonia - Delta Iota chapter website.
 package auth
 
 import (
