@@ -5,7 +5,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -26,8 +25,8 @@ const (
 	// sqlite3 is the name of the sqlite3 driver for the database
 	sqlite3 = "sqlite3"
 
-	// sqlite3DBAsset is the name of the bindata asset which stores the sqlite database
-	sqlite3DBAsset = "res/sqlite/deltaiota.db"
+	// sqlite3DBAsset is the name of the bindata asset which stores the sqlite schema
+	sqlite3SchemaAsset = "res/sqlite/deltaiota.sql"
 
 	// driver is the database/sql driver used for the database instance
 	driver = sqlite3
@@ -152,12 +151,27 @@ func sqlite3Setup(dsn string) (bool, error) {
 		return false, err
 	}
 
-	// Retrieve sqlite database asset
-	asset, err := bindata.Asset(sqlite3DBAsset)
+	// Retrieve sqlite3 database schema asset
+	asset, err := bindata.Asset(sqlite3SchemaAsset)
 	if err != nil {
 		return false, err
 	}
 
-	// Write asset directly to new file
-	return true, ioutil.WriteFile(dbPath, asset, 0664)
+	// Open empty database file at target path
+	didb := &data.DB{}
+	if err := didb.Open(sqlite3, dbPath); err != nil {
+		return false, err
+	}
+
+	// Execute schema to build database
+	if _, err := didb.Exec(string(asset)); err != nil {
+		return false, err
+	}
+
+	// Close database
+	if err := didb.Close(); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

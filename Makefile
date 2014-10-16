@@ -9,9 +9,7 @@ make:
 
 # Build binary assets
 bindata:
-	sqlite3 res/sqlite/deltaiota.db < res/sqlite/deltaiota.sql
 	go-bindata -pkg bindata -o ./bindata/bindata.go res/...
-	rm res/sqlite/deltaiota.db
 
 # Format, vet, and lint all files
 fmt:
