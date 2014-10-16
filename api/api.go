@@ -5,6 +5,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/mdlayher/deltaiota/api/util"
 	"github.com/mdlayher/deltaiota/api/v0"
 	"github.com/mdlayher/deltaiota/data"
 
@@ -18,7 +19,7 @@ func NewServeMux(db *data.DB) http.Handler {
 	r := mux.NewRouter().StrictSlash(true)
 
 	// Create a handler for all v0 API routes
-	r.PathPrefix(v0.APIPrefix).Handler(v0.NewServeMux(db))
+	r.PathPrefix(v0.APIPrefix).Handler(util.LogHandler{v0.NewServeMux(db)})
 
 	return r
 }
