@@ -3,7 +3,6 @@ package auth
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,9 +14,9 @@ import (
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
-// Test_makeAuthHandler_ClientError verifies that makeAuthHandler generates
+// Test_makeAuthHandlerClientError verifies that makeAuthHandler generates
 // appropriate output for a client error.
-func Test_makeAuthHandler_ClientError(t *testing.T) {
+func Test_makeAuthHandlerClientError(t *testing.T) {
 	// Test function which returns a formatted client error
 	reason := "foo bar"
 	clientErrFn := func(r *http.Request) (*models.User, *models.Session, error, error) {
@@ -29,59 +28,47 @@ func Test_makeAuthHandler_ClientError(t *testing.T) {
 	// Build client failure JSON
 	authFailJSON := []byte(`{"error":{"code":401,"message":"authentication failed: ` + reason + `"}}`)
 
-	// Perform test
-	if err := makeAuthHandlerTest(clientErrFn, okHandler(), http.StatusUnauthorized, authFailJSON, nil); err != nil {
-		t.Fatal(err)
-	}
+	test_makeAuthHandler(t, clientErrFn, okHandler(), http.StatusUnauthorized, authFailJSON, nil)
 }
 
-// Test_makeAuthHandler_ClientNonStandardError verifies that makeAuthHandler
+// Test_makeAuthHandlerClientNonStandardError verifies that makeAuthHandler
 // generates a generic error when the wrapped Error type is not used.
-func Test_makeAuthHandler_ClientNonStandardError(t *testing.T) {
+func Test_makeAuthHandlerClientNonStandardError(t *testing.T) {
 	// Test function which returns a non-standard client error
 	clientBadErrFn := func(r *http.Request) (*models.User, *models.Session, error, error) {
 		return nil, nil, errors.New("some error"), nil
 	}
 
-	// Perform test
-	if err := makeAuthHandlerTest(clientBadErrFn, okHandler(), http.StatusUnauthorized, util.JSON[util.NotAuthorized], nil); err != nil {
-		t.Fatal(err)
-	}
+	test_makeAuthHandler(t, clientBadErrFn, okHandler(), http.StatusUnauthorized, util.JSON[util.NotAuthorized], nil)
 }
 
-// Test_makeAuthHandler_ServerError verifies that makeAuthHandler
+// Test_makeAuthHandlerServerError verifies that makeAuthHandler
 // generates appropriate server error output and logging when an internal
 // server error occurs.
-func Test_makeAuthHandler_ServerError(t *testing.T) {
+func Test_makeAuthHandlerServerError(t *testing.T) {
 	// Test function which returns a server error
 	errServer := errors.New("internal server error")
 	serverErrFn := func(r *http.Request) (*models.User, *models.Session, error, error) {
 		return nil, nil, nil, errServer
 	}
 
-	// Perform test
-	if err := makeAuthHandlerTest(serverErrFn, okHandler(), http.StatusInternalServerError, util.JSON[util.InternalServerError], errServer); err != nil {
-		t.Fatal(err)
-	}
+	test_makeAuthHandler(t, serverErrFn, okHandler(), http.StatusInternalServerError, util.JSON[util.InternalServerError], errServer)
 }
 
-// Test_makeAuthHandler_NoError verifies that makeAuthHandler allows a
+// Test_makeAuthHandlerNoError verifies that makeAuthHandler allows a
 // HTTP handler to proceed with no authentication context.
-func Test_makeAuthHandler_NoError(t *testing.T) {
+func Test_makeAuthHandlerNoError(t *testing.T) {
 	// Test function which returns OK
 	okFn := func(r *http.Request) (*models.User, *models.Session, error, error) {
 		return nil, nil, nil, nil
 	}
 
-	// Perform test
-	if err := makeAuthHandlerTest(okFn, okHandler(), http.StatusOK, []byte("hello world"), nil); err != nil {
-		t.Fatal(err)
-	}
+	test_makeAuthHandler(t, okFn, okHandler(), http.StatusOK, []byte("hello world"), nil)
 }
 
-// Test_makeAuthHandler_UserSessionContext verifies that makeAuthHandler allows
+// Test_makeAuthHandlerUserSessionContext verifies that makeAuthHandler allows
 // a HTTP handler to proceed with a user and session authentication context.
-func Test_makeAuthHandler_UserSessionContext(t *testing.T) {
+func Test_makeAuthHandlerUserSessionContext(t *testing.T) {
 	// Test function which stores some request context
 	user := ditest.MockUser()
 	session, err := user.NewSession(time.Now().Add(1 * time.Minute))
@@ -101,10 +88,7 @@ func Test_makeAuthHandler_UserSessionContext(t *testing.T) {
 		w.Write([]byte(cUser.Username + cSession.Key))
 	}
 
-	// Perform test
-	if err := makeAuthHandlerTest(contextFn, contextHandlerFn, http.StatusOK, []byte(user.Username+session.Key), nil); err != nil {
-		t.Fatal(err)
-	}
+	test_makeAuthHandler(t, contextFn, contextHandlerFn, http.StatusOK, []byte(user.Username+session.Key), nil)
 }
 
 // Test_basicCredentials verifies that basicCredentials produces a correct
@@ -149,9 +133,9 @@ func Test_basicCredentials(t *testing.T) {
 	}
 }
 
-// makeAuthHandlerTest accepts input parameters and expected results for
+// test_makeAuthHandler accepts input parameters and expected results for
 // makeAuthHandler, and ensures it behaves as expected.
-func makeAuthHandlerTest(fn AuthenticateFunc, h http.HandlerFunc, code int, body []byte, expErr error) error {
+func test_makeAuthHandler(t *testing.T, fn AuthenticateFunc, h http.HandlerFunc, code int, body []byte, expErr error) {
 	// Capture log output in buffer
 	buffer := bytes.NewBuffer(nil)
 	log.SetOutput(buffer)
@@ -159,7 +143,7 @@ func makeAuthHandlerTest(fn AuthenticateFunc, h http.HandlerFunc, code int, body
 	// Create mock request
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 
 	// Invoke auth handler and capture output
@@ -168,27 +152,20 @@ func makeAuthHandlerTest(fn AuthenticateFunc, h http.HandlerFunc, code int, body
 
 	// Verify expected code
 	if w.Code != code {
-		return fmt.Errorf("unexpected code: %v != %v", w.Code, code)
+		t.Errorf("unexpected code: %v != %v", w.Code, code)
 	}
 
 	// Verify expected body
 	if !bytes.Equal(w.Body.Bytes(), body) {
-		return fmt.Errorf("unexpected body: %v != %v", string(w.Body.Bytes()), string(body))
-	}
-
-	// End test if status OK
-	if w.Code == http.StatusOK {
-		return nil
+		t.Errorf("unexpected body: %v != %v", string(w.Body.Bytes()), string(body))
 	}
 
 	// Check for error body from server
 	if expErr != nil {
 		if !bytes.Contains(buffer.Bytes(), []byte(expErr.Error())) {
-			return fmt.Errorf("error not logged: %v", expErr)
+			t.Errorf("error not logged: %v", expErr)
 		}
 	}
-
-	return nil
 }
 
 // Test handler called on successful authentication
