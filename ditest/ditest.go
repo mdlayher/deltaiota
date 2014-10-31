@@ -5,6 +5,7 @@ package ditest
 import (
 	"fmt"
 	"math/rand"
+	"testing"
 	"time"
 
 	"github.com/mdlayher/deltaiota/bindata"
@@ -43,6 +44,35 @@ func WithTemporaryDB(fn func(db *data.DB) error) error {
 
 	// Return error from closure
 	return fnErr
+}
+
+// WithTemporaryDBNew is a temporary scaffolding function which will be used for
+// refactoring tests, and will eventually replace WithTemporaryDB.
+func WithTemporaryDBNew(t *testing.T, fn func(t *testing.T, db *data.DB)) {
+	// Retrieve sqlite3 database schema asset
+	asset, err := bindata.Asset("res/sqlite/deltaiota.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Open in-memory database
+	didb := &data.DB{}
+	if err := didb.Open("sqlite3", ":memory:"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Execute schema to build database
+	if _, err := didb.Exec(string(asset)); err != nil {
+		t.Fatal(err)
+	}
+
+	// Invoke input closure with test and database
+	fn(t, didb)
+
+	// Close and destroy database
+	if err := didb.Close(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // MockUser generates a single User with mock data, used for testing.
