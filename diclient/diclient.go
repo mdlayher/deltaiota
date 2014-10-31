@@ -37,6 +37,7 @@ type Client struct {
 	session  *models.Session
 
 	Sessions *SessionsService
+	Status   *StatusService
 	Users    *UsersService
 }
 
@@ -67,6 +68,9 @@ func NewClient(host string, client *http.Client) (*Client, error) {
 	c.Sessions = &SessionsService{
 		client: c,
 	}
+	c.Status = &StatusService{
+		client: c,
+	}
 	c.Users = &UsersService{
 		client: c,
 	}
@@ -89,6 +93,21 @@ func (c *Client) AuthenticatePassword(username string, password string) (*models
 
 	// Return session for client consumption
 	return session, nil
+}
+
+// AuthenticateSession performs API authentication using the input username and session key.
+// This method is used to verify the validity of an existing session key, and stores it for
+// future use on successful authentication.
+func (c *Client) AuthenticateSession(username string, key string) error {
+	// Store username and session for future use
+	c.username = username
+	c.session = &models.Session{
+		Key: key,
+	}
+
+	// Attempt to retrieve current server status to check validity
+	_, _, err := c.Status.GetStatus()
+	return err
 }
 
 // NewRequest creates a new HTTP request, using the specified HTTP method and API endpoint.
