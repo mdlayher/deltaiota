@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,59 +10,49 @@ import (
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
-// TestNewServeMux verifies that NewServeMux properly sets up the root of the API.
-func TestNewServeMux(t *testing.T) {
+// TestNewServeMuxGETRootNotFound verifies that nothing exists at the root
+// of the HTTP API server.
+func TestNewServeMuxGETRootNotFound(t *testing.T) {
+	testNewServeMux(t, "GET", "/", http.StatusNotFound)
+}
+
+// TestNewServeMuxGETAPIv0RootNotFound verifies that nothing exists at the root
+// of the v0 HTTP API server.
+func TestNewServeMuxGETAPIv0RootNotFound(t *testing.T) {
+	testNewServeMux(t, "GET", v0.APIPrefix, http.StatusNotFound)
+}
+
+// TestNewServeMuxGETAPIV1RootNotFound verifies that nothing exists at the root
+// of the v1 HTTP API server.
+func TestNewServeMuxGETAPIv1RootNotFound(t *testing.T) {
+	testNewServeMux(t, "GET", "/api/v1", http.StatusNotFound)
+}
+
+// testNewServeMux is a helper which verifies that an HTTP request with the
+// given path returns the expected HTTP status code.
+func testNewServeMux(t *testing.T, method string, path string, code int) {
 	// Set up temporary database for test
-	err := ditest.WithTemporaryDB(func(db *data.DB) error {
+	ditest.WithTemporaryDBNew(t, func(t *testing.T, db *data.DB) {
 		// Set up HTTP test server
 		srv := httptest.NewServer(NewServeMux(db))
 		defer srv.Close()
 
-		// Set up tests to perform against server
-		tests := []struct {
-			method string
-			path   string
-			code   int
-		}{
-			// Root path
-			{"GET", "/", http.StatusNotFound},
-			// API v0 root
-			{"GET", v0.APIPrefix, http.StatusNotFound},
-			// API v1 root
-			{"GET", "/api/v1", http.StatusNotFound},
+		// Generate HTTP request, point at test server
+		path = srv.URL + path
+		req, err := http.NewRequest(method, path, nil)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		// Iterate and perform requests for all tests
-		for i, test := range tests {
-			// Point test at HTTP test server
-			test.path = srv.URL + test.path
-
-			// Set up logging prefix
-			logPrefix := fmt.Sprintf("[%02d] [%s %s]", i, test.method, test.path)
-
-			// Generate HTTP request
-			req, err := http.NewRequest(test.method, test.path, nil)
-			if err != nil {
-				return err
-			}
-
-			// Receive HTTP response
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-
-			// Check for expected status code
-			if res.StatusCode != test.code {
-				return fmt.Errorf("%s: unexpected code: %v != %v", logPrefix, res.StatusCode, test.code)
-			}
+		// Receive HTTP response
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		return nil
+		// Check for expected status code
+		if res.StatusCode != code {
+			t.Errorf("unexpected code: %v != %v", res.StatusCode, code)
+		}
 	})
-
-	// Fail on errors from database setup/cleanup
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
 }
