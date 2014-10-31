@@ -105,9 +105,15 @@ func (c *Client) AuthenticateSession(username string, key string) error {
 		Key: key,
 	}
 
-	// Attempt to retrieve current server status to check validity
-	_, _, err := c.Status.GetStatus()
-	return err
+	// Attempt to retrieve current session
+	session, _, err := c.Sessions.GetSession()
+	if err != nil {
+		return err
+	}
+
+	// Store entire session
+	c.session = session
+	return nil
 }
 
 // NewRequest creates a new HTTP request, using the specified HTTP method and API endpoint.

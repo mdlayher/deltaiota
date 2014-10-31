@@ -10,6 +10,26 @@ type SessionsService struct {
 	client *Client
 }
 
+// GetSession retrieves the current authenticated Session for the API.
+func (u *SessionsService) GetSession() (*models.Session, *Response, error) {
+	// Get request for Sessions endpoint
+	req, err := u.client.NewRequest("GET", "sessions", nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Perform request, attempt to unmarshal response into a
+	// Sessions API response
+	sessionRes := new(v0.SessionsResponse)
+	res, err := u.client.Do(req, &sessionRes)
+	if err != nil {
+		return nil, res, err
+	}
+
+	// Return session from API
+	return sessionRes.Session, res, nil
+}
+
 // CreateSession attempts to generate a new Session for the API, using
 // the input username and password.
 func (u *SessionsService) CreateSession(username string, password string) (*models.Session, *Response, error) {
