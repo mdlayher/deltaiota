@@ -32,10 +32,11 @@ func TestSessionsAPI(t *testing.T) {
 			method string
 			code   int
 		}{
+			// GetSession
+			{"GET", http.StatusOK},
 			// DeleteSession
 			{"DELETE", http.StatusNoContent},
 			// Method not allowed
-			{"GET", http.StatusMethodNotAllowed},
 			{"HEAD", http.StatusMethodNotAllowed},
 			{"PUT", http.StatusMethodNotAllowed},
 			{"PATCH", http.StatusMethodNotAllowed},
@@ -65,6 +66,54 @@ func TestSessionsAPI(t *testing.T) {
 			if code != test.code {
 				return fmt.Errorf("unexpected code: %v != %v", code, test.code)
 			}
+		}
+
+		return nil
+	})
+}
+
+// TestGetSession verifies that GetSession returns the appropriate HTTP status
+// code, body, and any errors which occur.
+func TestGetSession(t *testing.T) {
+	withContextUser(t, func(c *Context, user *models.User) error {
+		// Generate and store mock session
+		session := &models.Session{
+			UserID: user.ID,
+			Key:    ditest.RandomString(32),
+			Expire: uint64(time.Now().Unix()),
+		}
+		if err := c.db.InsertSession(session); err != nil {
+			return err
+		}
+
+		// Generate HTTP request
+		r, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			return err
+		}
+
+		// Store mock-authenticated session
+		auth.SetSession(r, session)
+
+		// Invoke GetSession with HTTP request
+		code, body, err := c.GetSession(r, util.Vars{})
+		if err != nil {
+			return err
+		}
+
+		// Ensure proper HTTP status code
+		if code != http.StatusOK {
+			return fmt.Errorf("expected HTTP OK, got code: %v", code)
+		}
+
+		// Ensure body has matching session
+		sessionRes := new(SessionsResponse)
+		if err := json.Unmarshal(body, &sessionRes); err != nil {
+			t.Fatal(err)
+		}
+
+		if session.Key != sessionRes.Session.Key {
+			return fmt.Errorf("mismatched session key: %v != %v", session.Key, sessionRes.Session.Key)
 		}
 
 		return nil

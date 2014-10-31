@@ -22,11 +22,22 @@ type SessionsResponse struct {
 func (c *Context) SessionsAPI(r *http.Request, vars util.Vars) (int, []byte, error) {
 	// Switch based on HTTP method
 	switch r.Method {
+	case "GET":
+		return c.GetSession(r, vars)
 	case "DELETE":
 		return c.DeleteSession(r, vars)
 	default:
 		return util.MethodNotAllowed(r, vars)
 	}
+}
+
+// GetSession is a util.JSONAPIFunc which returns the current Session and a HTTP 200
+// on success, or a non-200 HTTP status code and an error response on failure.
+func (c *Context) GetSession(r *http.Request, vars util.Vars) (int, []byte, error) {
+	body, err := json.Marshal(SessionsResponse{
+		Session: auth.Session(r),
+	})
+	return http.StatusOK, body, err
 }
 
 // PostSession is a util.JSONAPIFunc which creates a new Session and returns HTTP 200
