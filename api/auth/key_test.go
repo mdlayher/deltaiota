@@ -2,112 +2,144 @@ package auth
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/mdlayher/deltaiota/data"
+	"github.com/mdlayher/deltaiota/data/models"
 	"github.com/mdlayher/deltaiota/ditest"
 )
 
-// Test_keyAuthenticate verifies that keyAuthenticate properly authenticates
-// a session using the HTTP Basic Authorization header with a username and
-// session key pair.
-func Test_keyAuthenticate(t *testing.T) {
-	// Establish temporary database for test
-	err := ditest.WithTemporaryDB(func(db *data.DB) error {
+// Test_keyAuthenticateOK verifies that keyAuthenticate works properly with a
+// valid username and key pair.
+func Test_keyAuthenticateOK(t *testing.T) {
+	test_keyAuthenticate(t, nil, nil)
+}
+
+// Test_keyAuthenticateNoUsername verifies that keyAuthenticate returns a client
+// error when no username is set.
+func Test_keyAuthenticateNoUsername(t *testing.T) {
+	test_keyAuthenticate(t, errNoUsername, func(t *testing.T, ac *Context, user *models.User, session *models.Session) {
+		// Empty username
+		user.Username = ""
+	})
+}
+
+// Test_keyAuthenticateNoKey verifies that keyAuthenticate returns a client
+// error when no key is set.
+func Test_keyAuthenticateNoKey(t *testing.T) {
+	test_keyAuthenticate(t, errNoKey, func(t *testing.T, ac *Context, user *models.User, session *models.Session) {
+		// Empty key
+		session.Key = ""
+	})
+}
+
+// Test_keyAuthenticateInvalidUsername verifies that keyAuthenticate returns a client
+// error when an invalid username is set.
+func Test_keyAuthenticateInvalidUsername(t *testing.T) {
+	test_keyAuthenticate(t, errInvalidUsername, func(t *testing.T, ac *Context, user *models.User, session *models.Session) {
+		// Invalid username
+		user.Username = ditest.RandomString(8)
+	})
+}
+
+// Test_keyAuthenticateInvalidKey verifies that keyAuthenticate returns a client
+// error when an invalid key is set.
+func Test_keyAuthenticateInvalidKey(t *testing.T) {
+	test_keyAuthenticate(t, errInvalidKey, func(t *testing.T, ac *Context, user *models.User, session *models.Session) {
+		// Invalid key
+		session.Key = ditest.RandomString(8)
+	})
+}
+
+// Test_keyAuthenticateWrongKeyForUser verifies that keyAuthenticate returns a client
+// error when a valid user attempts to use another user's key.
+func Test_keyAuthenticateWrongKeyForUser(t *testing.T) {
+	test_keyAuthenticate(t, errInvalidKey, func(t *testing.T, ac *Context, user *models.User, session *models.Session) {
+		// Generate another mock user
+		user2 := ditest.MockUser()
+		if err := ac.db.InsertUser(user2); err != nil {
+			t.Fatal(err)
+		}
+
+		// Set original user's username to new user's username,
+		// so that the key is valid, but it does not belong to
+		// the new user
+		user.Username = user2.Username
+	})
+}
+
+// Test_keyAuthenticateExpiredSession verifies that keyAuthenticate returns a client
+// error when a valid user attempts to use an expired session.
+func Test_keyAuthenticateExpiredSession(t *testing.T) {
+	test_keyAuthenticate(t, errExpiredKey, func(t *testing.T, ac *Context, user *models.User, session *models.Session) {
+		// Expire session immediately
+		session.Expire = uint64(time.Now().Add(-1 * time.Hour).Unix())
+		if err := ac.db.UpdateSession(session); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+// test_keyAuthenticate is a test helper which aids in testing the keyAuthenticate
+// handler.  It establishes test context, performs a setup function which can be used
+// to manipulate test data, and finally expects a certain error to occur on authentication.
+func test_keyAuthenticate(t *testing.T, expErr error, fn func(t *testing.T, ac *Context, user *models.User, session *models.Session)) {
+	ditest.WithTemporaryDBNew(t, func(t *testing.T, db *data.DB) {
 		// Build context
 		ac := NewContext(db)
 
 		// Create and store mock user in temporary database
 		user := ditest.MockUser()
 		if err := ac.db.InsertUser(user); err != nil {
-			return err
-		}
-
-		// Create and store mock user without sessions in temporary database
-		user2 := ditest.MockUser()
-		if err := ac.db.InsertUser(user2); err != nil {
-			return err
+			t.Fatal(err)
 		}
 
 		// Generate a session for first user
 		session, err := user.NewSession(time.Now().Add(1 * time.Minute))
 		if err != nil {
-			return err
+			t.Fatal(err)
 		}
 
 		// Store session in temporary database
 		if err := ac.db.InsertSession(session); err != nil {
-			return err
+			t.Fatal(err)
 		}
 
-		// Generate an expired session for first user
-		expSession, err := user.NewSession(time.Now().Add(-1 * time.Minute))
+		// Create mock HTTP request
+		r, err := http.NewRequest("POST", "/", nil)
 		if err != nil {
-			return err
+			t.Fatal(err)
 		}
 
-		// Store session in temporary database
-		if err := ac.db.InsertSession(expSession); err != nil {
-			return err
+		// If set, perform test setup closure, to manipulate data and test
+		// for certain failure conditions
+		if fn != nil {
+			fn(t, ac, user, session)
 		}
 
-		var tests = []struct {
-			username string
-			key      string
-			err      error
-		}{
-			// Empty username and key
-			{"", "", errNoUsername},
-			// Username and empty key
-			{user.Username, "", errNoKey},
-			// Invalid username
-			{"test2", session.Key, errInvalidUsername},
-			// Invalid key
-			{user.Username, "test2", errInvalidKey},
-			// Key does not belong to user
-			{user2.Username, session.Key, errInvalidKey},
-			// Expired session
-			{user.Username, expSession.Key, errExpiredKey},
-			// Valid credentials
-			{user.Username, session.Key, nil},
+		// Set credentials for HTTP Basic
+		r.SetBasicAuth(user.Username, session.Key)
+
+		// Attempt authentication
+		_, _, cErr, sErr := ac.keyAuthenticate(r)
+
+		// Fail tests on any server error
+		if sErr != nil {
+			t.Fatal(sErr)
 		}
 
-		for _, test := range tests {
-			// Create mock HTTP request
-			req, err := http.NewRequest("POST", "/", nil)
-			if err != nil {
-				return err
-			}
+		// Check for expected client error
+		if cErr != expErr {
+			t.Fatalf("unexpected client err: %v != %v", cErr, expErr)
+		}
 
-			// Set credentials for HTTP Basic
-			req.SetBasicAuth(test.username, test.key)
-
-			// Attempt authentication
-			_, _, cErr, sErr := ac.keyAuthenticate(req)
-
-			// Fail tests on any server error
-			if sErr != nil {
-				return sErr
-			}
-
-			// Check for expected client error
-			if cErr != test.err {
-				return fmt.Errorf("unexpected err: %v != %v", cErr, test.err)
+		// Ensure any expired sessions were deleted
+		if cErr == errExpiredKey {
+			if _, err := ac.db.SelectSessionByKey(session.Key); err != sql.ErrNoRows {
+				t.Fatalf("session expired, but still in database")
 			}
 		}
-
-		// Ensure expired session was deleted
-		if _, err := ac.db.SelectSessionByKey(expSession.Key); err != sql.ErrNoRows {
-			return fmt.Errorf("session expired, but still in database")
-		}
-
-		return nil
 	})
-
-	if err != nil {
-		t.Fatal("ditest.WithTemporaryDB:", err)
-	}
 }
