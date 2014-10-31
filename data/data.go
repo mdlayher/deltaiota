@@ -169,7 +169,7 @@ func (db *DB) withPreparedStmt(query string, fn func(stmt *sql.Stmt) error) erro
 // once the closure invocation is complete.
 func (db *DB) withPreparedRows(query string, fn func(rows *Rows) error, args ...interface{}) error {
 	// Create or retrieve a prepared statement
-	err := db.withPreparedStmt(query, func(stmt *sql.Stmt) error {
+	return db.withPreparedStmt(query, func(stmt *sql.Stmt) error {
 		// Perform input query, sending arguments from caller
 		rows, err := stmt.Query(args...)
 		if err != nil {
@@ -194,9 +194,6 @@ func (db *DB) withPreparedRows(query string, fn func(rows *Rows) error, args ...
 		// Return result of closure
 		return fnErr
 	})
-
-	// Return any errors
-	return err
 }
 
 // sqlite3Setup performs setup routines specific to the sqlite3 database driver,
