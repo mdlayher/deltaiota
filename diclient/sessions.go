@@ -11,30 +11,16 @@ type SessionsService struct {
 }
 
 // GetSession retrieves the current authenticated Session for the API.
-func (u *SessionsService) GetSession() (*models.Session, *Response, error) {
-	// Get request for Sessions endpoint
-	req, err := u.client.NewRequest("GET", "sessions", nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Perform request, attempt to unmarshal response into a
-	// Sessions API response
-	sessionRes := new(v0.SessionsResponse)
-	res, err := u.client.Do(req, &sessionRes)
-	if err != nil {
-		return nil, res, err
-	}
-
-	// Return session from API
-	return sessionRes.Session, res, nil
+func (s *SessionsService) GetSession() (*models.Session, *Response, error) {
+	sessionsRes, res, err := s.sessionsRequest("GET", "sessions", nil)
+	return sessionsRes.Session, res, err
 }
 
 // CreateSession attempts to generate a new Session for the API, using
 // the input username and password.
-func (u *SessionsService) CreateSession(username string, password string) (*models.Session, *Response, error) {
+func (s *SessionsService) CreateSession(username string, password string) (*models.Session, *Response, error) {
 	// Create request for Sessions endpoint
-	req, err := u.client.NewRequest("POST", "sessions", nil)
+	req, err := s.client.NewRequest("POST", "sessions", nil)
 	req.SetBasicAuth(username, password)
 	if err != nil {
 		return nil, nil, err
@@ -43,7 +29,7 @@ func (u *SessionsService) CreateSession(username string, password string) (*mode
 	// Perform request, attempt to unmarshal response into a
 	// Sessions API response
 	sessionRes := new(v0.SessionsResponse)
-	res, err := u.client.Do(req, &sessionRes)
+	res, err := s.client.Do(req, &sessionRes)
 	if err != nil {
 		return nil, res, err
 	}
@@ -53,14 +39,28 @@ func (u *SessionsService) CreateSession(username string, password string) (*mode
 }
 
 // DeleteSession attempts to destroy the current Session for the API.
-func (u *SessionsService) DeleteSession() (*Response, error) {
-	// Delete request for Sessions endpoint
-	req, err := u.client.NewRequest("DELETE", "sessions", nil)
+func (s *SessionsService) DeleteSession() (*Response, error) {
+	_, res, err := s.sessionsRequest("DELETE", "sessions", nil)
+	return res, err
+}
+
+// sessionsRequest generates and performs a HTTP request to the Sessions API,
+// with the exception of new session creation, due to a different authentication
+// mechanism.
+func (s *SessionsService) sessionsRequest(method string, endpoint string, body interface{}) (*v0.SessionsResponse, *Response, error) {
+	// Create request for Sessions endpoint
+	req, err := s.client.NewRequest(method, endpoint, body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Perform request
-	res, err := u.client.Do(req, nil)
-	return res, err
+	// Perform request, attempt to unmarshal response into a
+	// Sessions API response
+	sessionRes := new(v0.SessionsResponse)
+	res, err := s.client.Do(req, &sessionRes)
+	if err != nil {
+		return nil, res, err
+	}
+
+	return sessionRes, res, nil
 }
