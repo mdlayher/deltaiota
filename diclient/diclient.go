@@ -78,7 +78,7 @@ func NewClient(host string, client *http.Client) (*Client, error) {
 // creating a new session on successful authentication, and storing it for future use.
 func (c *Client) AuthenticatePassword(username string, password string) (*models.Session, error) {
 	// Attempt authentication to create a Session
-	session, _, err := c.Sessions.CreateSession(username, password)
+	session, _, err := c.Sessions.Create(username, password)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (c *Client) AuthenticateSession(username string, key string) error {
 	}
 
 	// Attempt to retrieve current session
-	session, _, err := c.Sessions.GetSession()
+	session, _, err := c.Sessions.Get()
 	if err != nil {
 		return err
 	}

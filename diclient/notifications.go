@@ -10,21 +10,20 @@ type NotificationsService struct {
 	client *Client
 }
 
-// ListNotifications attempts to return a list of current notifications
-// for the active user.
-func (n *NotificationsService) ListNotifications() ([]*models.Notification, *Response, error) {
-	notificationsRes, res, err := n.notificationsRequest("GET", "notifications", nil)
+// List attempts to return a list of current notification for the active user.
+func (n *NotificationsService) List() ([]*models.Notification, *Response, error) {
+	nRes, res, err := n.request("GET", "notifications", nil)
 
 	// Check for empty notifications
-	if notificationsRes == nil || notificationsRes.Notifications == nil {
+	if nRes == nil || nRes.Notifications == nil {
 		return nil, res, err
 	}
 
-	return notificationsRes.Notifications, res, err
+	return nRes.Notifications, res, err
 }
 
-// notificationsRequest generates and performs a HTTP request to the Notifications API.
-func (n *NotificationsService) notificationsRequest(method string, endpoint string, body interface{}) (*v0.NotificationsResponse, *Response, error) {
+// request generates and performs a HTTP request to the Notifications API.
+func (n *NotificationsService) request(method string, endpoint string, body interface{}) (*v0.NotificationsResponse, *Response, error) {
 	// Create request for Notifications endpoint
 	req, err := n.client.NewRequest(method, endpoint, body)
 	if err != nil {
@@ -33,11 +32,11 @@ func (n *NotificationsService) notificationsRequest(method string, endpoint stri
 
 	// Perform request, attempt to unmarshal response into a
 	// Notifications API response
-	notificationsRes := new(v0.NotificationsResponse)
-	res, err := n.client.Do(req, &notificationsRes)
+	nRes := new(v0.NotificationsResponse)
+	res, err := n.client.Do(req, &nRes)
 	if err != nil {
 		return nil, res, err
 	}
 
-	return notificationsRes, res, nil
+	return nRes, res, nil
 }

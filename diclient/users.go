@@ -12,38 +12,44 @@ type UsersService struct {
 	client *Client
 }
 
-// ListUsers returns a slice of all User objects from the API.
-func (u *UsersService) ListUsers() ([]*models.User, *Response, error) {
-	usersRes, res, err := u.usersRequest("GET", "users", nil)
-	return usersRes.Users, res, err
-}
+// List returns a slice of all User objects from the API.
+func (u *UsersService) List() ([]*models.User, *Response, error) {
+	uRes, res, err := u.request("GET", "users", nil)
 
-// GetUser returns a single User object with the input ID from the API.
-func (u *UsersService) GetUser(id uint64) (*models.User, *Response, error) {
-	usersRes, res, err := u.usersRequest("GET", fmt.Sprintf("users/%d", id), nil)
-
-	// Check for no user found
-	if usersRes == nil || usersRes.Users == nil || len(usersRes.Users) == 0 {
+	// Check for empty users
+	if uRes == nil || uRes.Users == nil {
 		return nil, res, err
 	}
 
-	return usersRes.Users[0], res, err
+	return uRes.Users, res, err
 }
 
-// CreateUser generates an API user using the input User object.
-func (u *UsersService) CreateUser(user *models.User) (*Response, error) {
-	_, res, err := u.usersRequest("POST", "users", user)
+// Get returns a single User object with the input ID from the API.
+func (u *UsersService) Get(id uint64) (*models.User, *Response, error) {
+	uRes, res, err := u.request("GET", fmt.Sprintf("users/%d", id), nil)
+
+	// Check for no user found
+	if uRes == nil || uRes.Users == nil || len(uRes.Users) == 0 {
+		return nil, res, err
+	}
+
+	return uRes.Users[0], res, err
+}
+
+// Create generates an API user using the input User object.
+func (u *UsersService) Create(user *models.User) (*Response, error) {
+	_, res, err := u.request("POST", "users", user)
 	return res, err
 }
 
-// UpdateUser updates an existing API user using the input User object.
-func (u *UsersService) UpdateUser(user *models.User) (*Response, error) {
-	_, res, err := u.usersRequest("PUT", fmt.Sprintf("users/%d", user.ID), user)
+// Update updates an existing API user using the input User object.
+func (u *UsersService) Update(user *models.User) (*Response, error) {
+	_, res, err := u.request("PUT", fmt.Sprintf("users/%d", user.ID), user)
 	return res, err
 }
 
-// usersRequest generates and performs a HTTP request to the Users API.
-func (u *UsersService) usersRequest(method string, endpoint string, body interface{}) (*v0.UsersResponse, *Response, error) {
+// request generates and performs a HTTP request to the Users API.
+func (u *UsersService) request(method string, endpoint string, body interface{}) (*v0.UsersResponse, *Response, error) {
 	// Create request for Users endpoint
 	req, err := u.client.NewRequest(method, endpoint, body)
 	if err != nil {
@@ -52,11 +58,11 @@ func (u *UsersService) usersRequest(method string, endpoint string, body interfa
 
 	// Perform request, attempt to unmarshal response into a
 	// Users API response
-	usersRes := new(v0.UsersResponse)
-	res, err := u.client.Do(req, &usersRes)
+	uRes := new(v0.UsersResponse)
+	res, err := u.client.Do(req, &uRes)
 	if err != nil {
 		return nil, res, err
 	}
 
-	return usersRes, res, nil
+	return uRes, res, nil
 }

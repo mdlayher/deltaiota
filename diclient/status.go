@@ -9,21 +9,21 @@ type StatusService struct {
 	client *Client
 }
 
-// GetStatus returns the current API server status.
-func (u *StatusService) GetStatus() (*v0.Status, *Response, error) {
+// Get returns the current API server status.
+func (s *StatusService) Get() (*v0.Status, *Response, error) {
 	// Get request for Status endpoint
-	req, err := u.client.NewRequest("GET", "status", nil)
+	req, err := s.client.NewRequest("GET", "status", nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Perform request, attempt to unmarshal response into a
 	// Status API response
-	statusRes := new(v0.StatusResponse)
-	res, err := u.client.Do(req, &statusRes)
+	sRes := new(v0.StatusResponse)
+	res, err := s.client.Do(req, &sRes)
 	if err != nil {
 		return nil, res, err
 	}
 
-	return statusRes.Status, res, nil
+	return sRes.Status, res, nil
 }
