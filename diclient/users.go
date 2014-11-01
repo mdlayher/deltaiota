@@ -36,6 +36,12 @@ func (u *UsersService) CreateUser(user *models.User) (*Response, error) {
 	return res, err
 }
 
+// UpdateUser updates an existing API user using the input User object.
+func (u *UsersService) UpdateUser(user *models.User) (*Response, error) {
+	_, res, err := u.usersRequest("PUT", fmt.Sprintf("users/%d", user.ID), user)
+	return res, err
+}
+
 // usersRequest generates and performs a HTTP request to the Users API.
 func (u *UsersService) usersRequest(method string, endpoint string, body interface{}) (*v0.UsersResponse, *Response, error) {
 	// Create request for Users endpoint
