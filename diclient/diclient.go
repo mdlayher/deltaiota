@@ -36,9 +36,10 @@ type Client struct {
 	username string
 	session  *models.Session
 
-	Sessions *SessionsService
-	Status   *StatusService
-	Users    *UsersService
+	Notifications *NotificationsService
+	Sessions      *SessionsService
+	Status        *StatusService
+	Users         *UsersService
 }
 
 // NewClient creates a new Client for the HTTP API at the specified host.
@@ -65,15 +66,10 @@ func NewClient(host string, client *http.Client) (*Client, error) {
 	}
 
 	// Set up individual services within client
-	c.Sessions = &SessionsService{
-		client: c,
-	}
-	c.Status = &StatusService{
-		client: c,
-	}
-	c.Users = &UsersService{
-		client: c,
-	}
+	c.Notifications = &NotificationsService{client: c}
+	c.Sessions = &SessionsService{client: c}
+	c.Status = &StatusService{client: c}
+	c.Users = &UsersService{client: c}
 
 	return c, nil
 }
