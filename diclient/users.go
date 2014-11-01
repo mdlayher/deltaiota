@@ -21,6 +21,12 @@ func (u *UsersService) ListUsers() ([]*models.User, *Response, error) {
 // GetUser returns a single User object with the input ID from the API.
 func (u *UsersService) GetUser(id uint64) (*models.User, *Response, error) {
 	usersRes, res, err := u.usersRequest("GET", fmt.Sprintf("users/%d", id), nil)
+
+	// Check for no user found
+	if usersRes == nil || usersRes.Users == nil || len(usersRes.Users) == 0 {
+		return nil, res, err
+	}
+
 	return usersRes.Users[0], res, err
 }
 
