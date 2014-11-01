@@ -10,7 +10,7 @@ type StatusService struct {
 }
 
 // GetStatus returns the current API server status.
-func (u *StatusService) GetStatus() (*v0.StatusResponse, *Response, error) {
+func (u *StatusService) GetStatus() (*v0.Status, *Response, error) {
 	// Get request for Status endpoint
 	req, err := u.client.NewRequest("GET", "status", nil)
 	if err != nil {
@@ -25,5 +25,5 @@ func (u *StatusService) GetStatus() (*v0.StatusResponse, *Response, error) {
 		return nil, res, err
 	}
 
-	return statusRes, res, nil
+	return statusRes.Status, res, nil
 }
