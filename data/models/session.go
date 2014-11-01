@@ -39,6 +39,18 @@ func NewSession(userID uint64, password string, expire time.Time) (*Session, err
 	return s, nil
 }
 
+// IsExpired returns if the current session is expired; meaning that the current
+// UNIX timestamp is greater than the one set for the session.
+func (s *Session) IsExpired() bool {
+	return uint64(time.Now().Unix()) > s.Expire
+}
+
+// SetExpire sets the expiration timestamp of the receiving Session struct to
+// the UNIX timestamp equivalent of the input time.Time value.
+func (s *Session) SetExpire(expire time.Time) {
+	s.Expire = uint64(expire.Unix())
+}
+
 // SQLReadFields returns the correct field order to scan SQL row results into the
 // receiving Session struct.
 func (s *Session) SQLReadFields() []interface{} {

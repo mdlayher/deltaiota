@@ -75,7 +75,7 @@ func Test_keyAuthenticateWrongKeyForUser(t *testing.T) {
 func Test_keyAuthenticateExpiredSession(t *testing.T) {
 	test_keyAuthenticate(t, errExpiredKey, func(t *testing.T, ac *Context, user *models.User, session *models.Session) {
 		// Expire session immediately
-		session.Expire = uint64(time.Now().Add(-1 * time.Hour).Unix())
+		session.SetExpire(time.Now().Add(-1 * time.Hour))
 		if err := ac.db.UpdateSession(session); err != nil {
 			t.Fatal(err)
 		}

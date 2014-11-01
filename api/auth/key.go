@@ -80,7 +80,7 @@ func (a *Context) keyAuthenticate(r *http.Request) (*models.User, *models.Sessio
 	}
 
 	// Verify key is not expired
-	if uint64(time.Now().Unix()) >= session.Expire {
+	if session.IsExpired() {
 		// Delete expired key
 		if err := a.db.DeleteSession(session); err != nil {
 			return nil, nil, nil, err
@@ -91,7 +91,7 @@ func (a *Context) keyAuthenticate(r *http.Request) (*models.User, *models.Sessio
 	}
 
 	// Update expire time, since authentication succeeded
-	session.Expire = uint64(time.Now().Add(SessionDuration).Unix())
+	session.SetExpire(time.Now().Add(SessionDuration))
 	if err := a.db.UpdateSession(session); err != nil {
 		// If database is readonly, ignore error
 		if !a.db.IsReadonly(err) {
