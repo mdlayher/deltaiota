@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -19,14 +18,9 @@ func TestJSONAPIHandlerNoBody(t *testing.T) {
 		return http.StatusOK, nil, nil
 	}
 
-	// Perform test with HTTP GET
-	if err := testJSONAPIHandler(emptyFn, "GET", http.StatusOK, nil, nil); err != nil {
-		t.Fatal(err)
-	}
-
-	// Perform test with HTTP HEAD
-	if err := testJSONAPIHandler(emptyFn, "HEAD", http.StatusOK, nil, nil); err != nil {
-		t.Fatal(err)
+	// Perform test with HTTP GET and HEAD
+	for _, m := range []string{"GET", "HEAD"} {
+		testJSONAPIHandler(t, emptyFn, m, http.StatusOK, nil, nil)
 	}
 }
 
@@ -39,14 +33,9 @@ func TestJSONAPIHandlerBody(t *testing.T) {
 		return http.StatusOK, expBody, nil
 	}
 
-	// Perform test with HTTP GET
-	if err := testJSONAPIHandler(bodyFn, "GET", http.StatusOK, expBody, nil); err != nil {
-		t.Fatal(err)
-	}
-
-	// Perform test with HTTP HEAD - no response body expected
-	if err := testJSONAPIHandler(bodyFn, "HEAD", http.StatusOK, nil, nil); err != nil {
-		t.Fatal(err)
+	// Perform test with HTTP GET and HEAD
+	for _, m := range []string{"GET", "HEAD"} {
+		testJSONAPIHandler(t, bodyFn, m, http.StatusOK, expBody, nil)
 	}
 }
 
@@ -59,28 +48,21 @@ func TestJSONAPIHandlerServerError(t *testing.T) {
 		return JSONAPIErr(expErr)
 	}
 
-	// Perform test with HTTP GET
-	if err := testJSONAPIHandler(errFn, "GET", http.StatusInternalServerError, nil, expErr); err != nil {
-		t.Fatal(err)
-	}
-
-	// Perform test with HTTP HEAD - no response body expected
-	if err := testJSONAPIHandler(errFn, "HEAD", http.StatusInternalServerError, nil, expErr); err != nil {
-		t.Fatal(err)
+	// Perform test with HTTP GET and HEAD
+	for _, m := range []string{"GET", "HEAD"} {
+		testJSONAPIHandler(t, errFn, m, http.StatusInternalServerError, nil, expErr)
 	}
 }
 
 // TestJSONAPIHandlerMethodNotAllowed verifies that JSONAPIHandler returns correct
 // results for an input function with an unknown HTTP request type.
 func TestJSONAPIHandlerMethodNotAllowed(t *testing.T) {
-	if err := testJSONAPIHandler(MethodNotAllowed, "CAT", http.StatusMethodNotAllowed, JSON[methodNotAllowed], nil); err != nil {
-		t.Fatal(err)
-	}
+	testJSONAPIHandler(t, MethodNotAllowed, "CAT", http.StatusMethodNotAllowed, JSON[methodNotAllowed], nil)
 }
 
 // testJSONAPIHandler accepts input parameters and expected results for
 // JSONAPIHandler, and ensures it behaves as expected.
-func testJSONAPIHandler(fn JSONAPIFunc, method string, code int, body []byte, expErr error) error {
+func testJSONAPIHandler(t *testing.T, fn JSONAPIFunc, method string, code int, body []byte, expErr error) {
 	// Capture log output in buffer
 	buffer := bytes.NewBuffer(nil)
 	log.SetOutput(buffer)
@@ -88,7 +70,7 @@ func testJSONAPIHandler(fn JSONAPIFunc, method string, code int, body []byte, ex
 	// Create mock HTTP request
 	r, err := http.NewRequest(method, "/", nil)
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 
 	// Capture output, invoke function as http.HandlerFunc
@@ -98,53 +80,48 @@ func testJSONAPIHandler(fn JSONAPIFunc, method string, code int, body []byte, ex
 	// If body not empty, ensure JSON response header set
 	if len(body) > 0 {
 		if contentType := w.Header().Get(httpContentType); contentType != jsonContentType {
-			return fmt.Errorf("unexpected Content-Type header: %v != %v", contentType, jsonContentType)
+			t.Fatalf("unexpected Content-Type header: %v != %v", contentType, jsonContentType)
 		}
 	}
 
 	// Verify expected code
 	if w.Code != code {
-		return fmt.Errorf("unexpected code: %v != %v", w.Code, code)
+		t.Fatalf("unexpected code: %v != %v", w.Code, code)
 	}
 
 	// If no error, verify expected body
-	if expErr == nil {
+	if expErr == nil && method != "HEAD" {
 		if !bytes.Equal(w.Body.Bytes(), body) {
-			return fmt.Errorf("unexpected body: %v != %v", w.Body.Bytes(), body)
+			t.Fatalf("unexpected body: %v != %v", w.Body.Bytes(), body)
 		}
 
-		return nil
-	}
-
-	// If HEAD, there will be no body
-	if method == "HEAD" {
-		// Verify no body
+		return
+	} else if method == "HEAD" {
+		// If HEAD, there will be no body
 		length := len(w.Body.Bytes())
 		if length > 0 {
-			return fmt.Errorf("non-empty body for HTTP HEAD: %v", length)
+			t.Fatalf("non-empty body for HTTP HEAD: %v", length)
 		}
 
-		return nil
+		return
 	}
 
 	// Verify expected error, by unmarshaling body
 	var errRes ErrorResponse
 	if err := json.Unmarshal(w.Body.Bytes(), &errRes); err != nil {
-		return err
+		t.Fatal(err)
 	}
 
 	// Verify error fields
 	if errRes.Error.Code != code {
-		return fmt.Errorf("unexpected error code: %v != %v", errRes.Error.Code, code)
+		t.Fatalf("unexpected error code: %v != %v", errRes.Error.Code, code)
 	}
 	if errRes.Error.Message != InternalServerError {
-		return fmt.Errorf("unexpected error message: %v != %v", errRes.Error.Message, InternalServerError)
+		t.Fatalf("unexpected error message: %v != %v", errRes.Error.Message, InternalServerError)
 	}
 
 	// Verify error was logged
 	if !bytes.Contains(buffer.Bytes(), []byte(expErr.Error())) {
-		return fmt.Errorf("error not logged: %v", expErr)
+		t.Fatalf("error not logged: %v", expErr)
 	}
-
-	return nil
 }
